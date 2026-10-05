@@ -24,8 +24,8 @@ class process {
 
     this.num = `p${processes.length}`;
 
-    this.x = startX * (processes.length + 1);
-    this.y = startY;
+    this.x = 100 * (processes.length + 1); // x = 100 is where the processes start getting drawn on the screen, then every 100 pixels after that
+    this.y = height / 2;
 
     // going to have to make this responsive, so will need to add a length and width, and update them accordingly as the number of processes grows, but this is for much later
     this.width = 50;

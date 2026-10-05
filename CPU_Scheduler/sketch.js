@@ -3,9 +3,7 @@ let selectedAlgo;
 let startInput, burstTime, timeQuantum, priority;
 let submitProcess, startRun, clearProcesses;
 let processes = [];
-let granttChartInfo = [];
-
-let startX, startY;
+let ganttChartInfo = [];
 
 let stepModeCheckbox, stepButton;
 let run = false;
@@ -23,9 +21,6 @@ let avgTurnaroundTime, avgResponseTime, avgWaitingTime;
 function setup() {
   createCanvas(windowWidth, windowHeight - 100);
   // background(255);
-
-  startX = 100;
-  startY = height / 2;
 
   rectMode(CENTER);
 
@@ -86,7 +81,7 @@ function setup() {
   clearProcesses.position(20, 140);
   clearProcesses.mousePressed(() => {
     processes.length = 0; // setting a list's length equal to 0 clears the list
-    granttChartInfo.length = 0;
+    ganttChartInfo.length = 0;
     stepIndex = 0;
   });
 
@@ -142,7 +137,7 @@ function draw() {
       p.display();
     }
 
-    for (const r of granttChartInfo) {
+    for (const r of ganttChartInfo) {
       rectMode(CORNER);
       noStroke();
       fill(r.red, r.green, r.blue, r.a);
@@ -153,15 +148,15 @@ function draw() {
     }
 
     if (!stepModeCheckbox.checked()) {
-      if (granttChartInfo.length && stepIndex < granttChartInfo.length) {
+      if (ganttChartInfo.length && stepIndex < ganttChartInfo.length) {
         if (!(frameCount % delay)) {
-          granttChartInfo[stepIndex].a = 255;
+          ganttChartInfo[stepIndex].a = 255;
           stepIndex++;
         }
       }
     }
 
-    if (granttChartInfo.length && stepIndex == granttChartInfo.length) {
+    if (ganttChartInfo.length && stepIndex == ganttChartInfo.length) {
       // the user/program has finished stepping through the display. the metrics will be displayed then
 
       text("Metrics:", width / 2, height / 10);
@@ -189,7 +184,7 @@ function createProcess() {
 }
 
 function go() {
-  granttChartInfo.length = 0;
+  ganttChartInfo.length = 0;
   stepIndex = 0;
 
   processesCopy = structuredClone(processes); // this is so the original processes do not get changed
@@ -230,11 +225,25 @@ function go() {
   }
 }
 
-function FCFS(processList) {
+function addToGanttChart(process, timePassed) {
   let xStart = 100;
   let rectWidth = 20;
   let rectHeight = 50;
 
+  ganttChartInfo.push({
+    red: process == null ? 100 : process.red,
+    green: process == null ? 100 : process.green,
+    blue: process == null ? 100 : process.blue,
+    x: xStart + timePassed * rectWidth,
+    y: height / 1.4,
+    w: rectWidth,
+    h: rectHeight,
+    a: 0,
+    time: timePassed,
+  });
+}
+
+function FCFS(processList) {
   let timePassed = 0;
   let currentProcessIndex = 0;
 
@@ -244,19 +253,7 @@ function FCFS(processList) {
     if (timePassed >= +currentProcess.startTime) {
       currentProcess.firstExecutionTime = timePassed;
       for (let i = 0; i < +currentProcess.burstTime; i++) {
-        granttChartInfo.push({
-          red: currentProcess.red,
-          green: currentProcess.green,
-          blue: currentProcess.blue,
-          x: xStart + timePassed * rectWidth,
-          y: height / 1.4,
-          w: rectWidth,
-          h: rectHeight,
-          a: 0,
-          time: timePassed,
-        });
-
-        // console.log(currentProcess.num);
+        addToGanttChart(currentProcess, timePassed);
         timePassed++;
       }
 
@@ -265,19 +262,8 @@ function FCFS(processList) {
       currentProcessIndex++;
     } else {
       // there is no process waiting, cpu idle
-      granttChartInfo.push({
-        red: 100,
-        green: 100,
-        blue: 100, // all grey
-        x: xStart + timePassed * rectWidth,
-        y: height / 1.4,
-        w: rectWidth,
-        h: rectHeight,
-        a: 0,
-        time: timePassed,
-      });
+      addToGanttChart(null, timePassed);
 
-      // console.log("cpu idle");
       timePassed++;
     }
   }
@@ -290,11 +276,6 @@ function SRTF(processList) {
   let timePassed = 0;
   let finishedProcesses = 0;
   let readyQueue = [];
-
-  // just for drawing
-  let xStart = 100;
-  let rectWidth = 20;
-  let rectHeight = 50;
 
   while (finishedProcesses != processList.length) {
     for (const p of processList) {
@@ -320,31 +301,11 @@ function SRTF(processList) {
         processList[indexOfCurrentProcess].firstExecutionTime = timePassed;
       }
 
-      granttChartInfo.push({
-        red: readyQueue[0].red,
-        green: readyQueue[0].green,
-        blue: readyQueue[0].blue,
-        x: xStart + timePassed * rectWidth,
-        y: height / 1.4,
-        w: rectWidth,
-        h: rectHeight,
-        a: 0,
-        time: timePassed,
-      });
+      addToGanttChart(readyQueue[0], timePassed);
     } else {
       // cpu idle
 
-      granttChartInfo.push({
-        red: 100,
-        green: 100,
-        blue: 100, // all grey
-        x: xStart + timePassed * rectWidth,
-        y: height / 1.4,
-        w: rectWidth,
-        h: rectHeight,
-        a: 0,
-        time: timePassed,
-      });
+      addToGanttChart(null, timePassed);
     }
     timePassed++;
 
@@ -377,11 +338,6 @@ function SJF(processList) {
   let finishedProcesses = 0;
   let readyQueue = [];
 
-  // just for drawing
-  let xStart = 100;
-  let rectWidth = 20;
-  let rectHeight = 50;
-
   let alreadyAdded = [];
 
   while (finishedProcesses != processList.length) {
@@ -409,17 +365,7 @@ function SJF(processList) {
 
       for (let i = 0; i < readyQueue[0].burstTime; i++) {
         // finish the current process
-        granttChartInfo.push({
-          red: readyQueue[0].red,
-          green: readyQueue[0].green,
-          blue: readyQueue[0].blue,
-          x: xStart + timePassed * rectWidth,
-          y: height / 1.4,
-          w: rectWidth,
-          h: rectHeight,
-          a: 0,
-          time: timePassed,
-        });
+        addToGanttChart(readyQueue[0], timePassed);
         timePassed++;
       }
 
@@ -431,17 +377,7 @@ function SJF(processList) {
     } else {
       // ready queue is empty, cpu idle
 
-      granttChartInfo.push({
-        red: 100,
-        green: 100,
-        blue: 100, // all grey
-        x: xStart + timePassed * rectWidth,
-        y: height / 1.4,
-        w: rectWidth,
-        h: rectHeight,
-        a: 0,
-        time: timePassed,
-      });
+      addToGanttChart(null, timePassed);
       timePassed++;
     }
   }
@@ -454,11 +390,6 @@ function RR(processList, tq) {
   let timePassed = 0;
   let finishedProcesses = 0;
   let readyQueue = [];
-
-  // just for drawing
-  let xStart = 100;
-  let rectWidth = 20;
-  let rectHeight = 50;
 
   let alreadyAdded = [];
 
@@ -487,17 +418,7 @@ function RR(processList, tq) {
       for (let i = 0; i < tq; i++) {
         // only loop to the time quantum
         if (readyQueue[0].burstTime != 0) {
-          granttChartInfo.push({
-            red: readyQueue[0].red,
-            green: readyQueue[0].green,
-            blue: readyQueue[0].blue,
-            x: xStart + timePassed * rectWidth,
-            y: height / 1.4,
-            w: rectWidth,
-            h: rectHeight,
-            a: 0,
-            time: timePassed,
-          });
+          addToGanttChart(readyQueue[0], timePassed);
           readyQueue[0].burstTime -= 1;
           timePassed++;
 
@@ -539,17 +460,7 @@ function RR(processList, tq) {
     } else {
       // ready queue is empty, cpu idle
 
-      granttChartInfo.push({
-        red: 100,
-        green: 100,
-        blue: 100, // all grey
-        x: xStart + timePassed * rectWidth,
-        y: height / 1.4,
-        w: rectWidth,
-        h: rectHeight,
-        a: 0,
-        time: timePassed,
-      });
+      addToGanttChart(null, timePassed);
       timePassed++;
     }
   }
@@ -564,11 +475,6 @@ function PRI_nonPreemptive(processList) {
   let timePassed = 0;
   let finishedProcesses = 0;
   let readyQueue = [];
-
-  // just for drawing
-  let xStart = 100;
-  let rectWidth = 20;
-  let rectHeight = 50;
 
   let alreadyAdded = [];
 
@@ -597,17 +503,7 @@ function PRI_nonPreemptive(processList) {
 
       for (let i = 0; i < readyQueue[0].burstTime; i++) {
         // finish the current process
-        granttChartInfo.push({
-          red: readyQueue[0].red,
-          green: readyQueue[0].green,
-          blue: readyQueue[0].blue,
-          x: xStart + timePassed * rectWidth,
-          y: height / 1.4,
-          w: rectWidth,
-          h: rectHeight,
-          a: 0,
-          time: timePassed,
-        });
+        addToGanttChart(readyQueue[0], timePassed);
         timePassed++;
       }
 
@@ -618,17 +514,7 @@ function PRI_nonPreemptive(processList) {
     } else {
       // ready queue is empty, cpu idle
 
-      granttChartInfo.push({
-        red: 100,
-        green: 100,
-        blue: 100, // all grey
-        x: xStart + timePassed * rectWidth,
-        y: height / 1.4,
-        w: rectWidth,
-        h: rectHeight,
-        a: 0,
-        time: timePassed,
-      });
+      addToGanttChart(null, timePassed);
       timePassed++;
     }
   }
@@ -643,11 +529,6 @@ function PRI_preemptive(processList) {
   let timePassed = 0;
   let finishedProcesses = 0;
   let readyQueue = [];
-
-  // just for drawing
-  let xStart = 100;
-  let rectWidth = 20;
-  let rectHeight = 50;
 
   while (finishedProcesses != processList.length) {
     for (const p of processList) {
@@ -673,31 +554,11 @@ function PRI_preemptive(processList) {
 
       readyQueue[0].burstTime -= 1;
 
-      granttChartInfo.push({
-        red: readyQueue[0].red,
-        green: readyQueue[0].green,
-        blue: readyQueue[0].blue,
-        x: xStart + timePassed * rectWidth,
-        y: height / 1.4,
-        w: rectWidth,
-        h: rectHeight,
-        a: 0,
-        time: timePassed,
-      });
+      addToGanttChart(readyQueue[0], timePassed);
     } else {
       // cpu idle
 
-      granttChartInfo.push({
-        red: 100,
-        green: 100,
-        blue: 100, // all grey
-        x: xStart + timePassed * rectWidth,
-        y: height / 1.4,
-        w: rectWidth,
-        h: rectHeight,
-        a: 0,
-        time: timePassed,
-      });
+      addToGanttChart(null, timePassed);
     }
     timePassed++;
 
@@ -726,8 +587,8 @@ function PRI_preemptive(processList) {
 }
 
 function stepForward() {
-  if (granttChartInfo.length && stepIndex < granttChartInfo.length) {
-    granttChartInfo[stepIndex].a = 255;
+  if (ganttChartInfo.length && stepIndex < ganttChartInfo.length) {
+    ganttChartInfo[stepIndex].a = 255;
     stepIndex++;
   }
 }
