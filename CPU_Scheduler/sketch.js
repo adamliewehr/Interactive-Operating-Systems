@@ -56,13 +56,13 @@ function setup() {
 
   startInput = createInput();
   burstInput = createInput();
+  priority = createInput(1);
   timeQuantum = createInput();
-  priority = createInput();
 
   startInput.position(-999, -999);
   burstInput.position(-999, -999);
-  timeQuantum.position(-999, -999);
   priority.position(-999, -999);
+  timeQuantum.position(-999, -999);
 
   // labels
   startTimeLabel = createP("Start Time");
@@ -90,7 +90,7 @@ function setup() {
   clearProcesses = createButton("Clear Processes");
   clearProcesses.position(20, 140);
   clearProcesses.mousePressed(() => {
-    processes.length = 0;
+    processes.length = 0; // setting a list's length equal to 0 clears the list
     granttChartInfo.length = 0;
     stepIndex = 0;
   });
@@ -116,31 +116,18 @@ function algoSelectedEvent() {
   startTimeLabel.position(20, 30);
   startInput.position(20, 70);
 
-  burstTimeLabel.position(170, 30);
-  burstInput.position(170, 70);
+  burstTimeLabel.position(200, 30);
+  burstInput.position(200, 70);
+
+  priorityLabel.position(400, 30);
+  priority.position(400, 70);
 
   if (selectedAlgo == "Round Robin (RR)") {
-    timeQuantumLabel.position(320, 30);
-    timeQuantum.position(320, 70);
+    timeQuantumLabel.position(650, 30);
+    timeQuantum.position(650, 70);
   } else {
     timeQuantumLabel.position(-999, -999);
     timeQuantum.position(-999, -999); // off the screen
-  }
-
-  if (
-    selectedAlgo == "Priority Scheduling (PRI) - PREEMPTIVE" ||
-    selectedAlgo == "Priority Scheduling (PRI) - NON-PREEMPTIVE"
-  ) {
-    // filter out any processes that don't have a priority
-    processes = processes.filter((element) => {
-      return element.priority != null;
-    });
-
-    priorityLabel.position(320, 30);
-    priority.position(320, 70);
-  } else {
-    priorityLabel.position(-999, -999);
-    priority.position(-999, -999); // off the screen
   }
 }
 
@@ -152,12 +139,8 @@ function draw() {
 
   text("In Order:", 100, height / 1.5);
 
-  if (!selectedAlgo) {
-    // selectedAlgo is initially undefined, so this only
-    // shows up when the sketch first starts and user has yet
-    // to select an option.
-    // text("Please select a algo (below)", 50, 100);
-  } else {
+  if (selectedAlgo) {
+    // if there is an algo selected, do everything
     for (const p of processes) {
       rectMode(CENTER);
       p.update();
@@ -200,56 +183,42 @@ function draw() {
 
 function createProcess() {
   if (
-    [
-      "Priority Scheduling (PRI) - PREEMPTIVE",
-      "Priority Scheduling (PRI) - NON-PREEMPTIVE",
-    ].includes(dropdown.value())
+    Number.isInteger(+startInput.value()) &&
+    Number.isInteger(+burstInput.value()) &&
+    Number.isInteger(+priority.value())
   ) {
-    if (
-      Number.isInteger(+startInput.value()) &&
-      Number.isInteger(+burstInput.value()) &&
-      Number.isInteger(+priority.value())
-    ) {
-      processes.push(
-        new process(startInput.value(), burstInput.value(), priority.value()),
-      );
-    }
-  } else {
-    if (
-      Number.isInteger(+startInput.value()) &&
-      Number.isInteger(+burstInput.value())
-    ) {
-      processes.push(new process(startInput.value(), burstInput.value(), null));
-    }
+    processes.push(
+      new process(startInput.value(), burstInput.value(), priority.value()),
+    );
   }
 }
 
 function go() {
-  // console.log(processes);
   granttChartInfo.length = 0;
   stepIndex = 0;
 
+  processesCopy = structuredClone(processes); // this is so the original processes do not get changed
+
   switch (dropdown.value()) {
     case "First Come First Serve (FCFS)":
-      // Code runs if expression === value1
-      processListWithMetrics = FCFS(processes);
+      processListWithMetrics = FCFS(processesCopy);
       break;
     case "Shortest Job First (SJF)":
-      processListWithMetrics = SJF(processes);
+      processListWithMetrics = SJF(processesCopy);
       break;
 
     case "Shortest Remaining Time First (SRTF)":
-      processListWithMetrics = SRTF(processes);
+      processListWithMetrics = SRTF(processesCopy);
       break;
 
     case "Round Robin (RR)":
-      processListWithMetrics = RR(processes, timeQuantum.value());
+      processListWithMetrics = RR(processesCopy, timeQuantum.value());
       break;
     case "Priority Scheduling (PRI) - PREEMPTIVE":
-      processListWithMetrics = PRI_preemptive(processes);
+      processListWithMetrics = PRI_preemptive(processesCopy);
       break;
     case "Priority Scheduling (PRI) - NON-PREEMPTIVE":
-      processListWithMetrics = PRI_nonPreemptive(processes);
+      processListWithMetrics = PRI_nonPreemptive(processesCopy);
       break;
     default:
       // Code runs if no cases match
@@ -263,22 +232,6 @@ function go() {
     totalTurnaroundTime = 0;
     totalResponseTime = 0;
     totalWaitingTime = 0;
-
-    // from the processclass for reference
-    // // Formula: Turnaround Time = Completion Time - Arrival Time
-    // this.turnaroundTime = null;
-    // // Response Time = First Execution Time - Arrival Time
-    // this.responseTime = null
-    // Waiting Time = Turnaround Time - Burst Time
-    // this.waitingTime = null
-
-    //   this.startTime = startTime; // aka arrival time
-    // this.burstTime = burstTime;
-    // this.priority = priority
-
-    // // for metrics. this is what we extract during the algoirthm runtime
-    // this.completionTime = null // when did the process complete all bursts
-    // this.firstExecutionTime  = null // when was the process first run
 
     for (const p of processListWithMetrics) {
       // compute here
@@ -294,15 +247,10 @@ function go() {
     avgTurnaroundTime = totalTurnaroundTime / processListWithMetrics.length;
     avgResponseTime = totalResponseTime / processListWithMetrics.length;
     avgWaitingTime = totalWaitingTime / processListWithMetrics.length;
-
-    // console.log(avgTurnaroundTime)
-    // console.log(avgResponseTime)
   }
 }
 
 function FCFS(processList) {
-  processList = structuredClone(processList); // this is so the original processes do not get changed
-
   processList.sort((a, b) => Number(a.startTime) - Number(b.startTime));
 
   let xStart = 100;
@@ -360,13 +308,7 @@ function FCFS(processList) {
 }
 
 function SRTF(processList) {
-  // shortest remaining time
-  // i coded the preemptive version of SJF on accident first... so now we have an extra algo which is good i guess
-
-  processList = structuredClone(processList); // this is so the original processes do not get changed
-
   processList.sort((a, b) => Number(a.startTime) - Number(b.startTime));
-  // console.log(processList);
 
   // necessary for the algo
   let timePassed = 0;
@@ -454,10 +396,7 @@ function SRTF(processList) {
 }
 
 function SJF(processList) {
-  processList = structuredClone(processList);
-
   processList.sort((a, b) => Number(a.startTime) - Number(b.startTime));
-  // console.log(processList);
 
   // necessary for the algo
   let timePassed = 0;
@@ -468,8 +407,6 @@ function SJF(processList) {
   let xStart = 100;
   let rectWidth = 20;
   let rectHeight = 50;
-
-  // let tempOutput = []
 
   let alreadyAdded = [];
 
@@ -539,10 +476,7 @@ function SJF(processList) {
 }
 
 function RR(processList, tq) {
-  processList = structuredClone(processList);
-
   processList.sort((a, b) => Number(a.startTime) - Number(b.startTime));
-  // console.log(processList);
 
   // necessary for the algo
   let timePassed = 0;
@@ -652,8 +586,6 @@ function RR(processList, tq) {
 }
 
 function PRI_nonPreemptive(processList) {
-  processList = structuredClone(processList);
-
   processList.sort((a, b) => Number(a.startTime) - Number(b.startTime));
   // console.log(processList);
 
@@ -734,8 +666,6 @@ function PRI_nonPreemptive(processList) {
 }
 
 function PRI_preemptive(processList) {
-  processList = structuredClone(processList); // this is so the original processes do not get changed
-
   processList.sort((a, b) => Number(a.startTime) - Number(b.startTime));
   // console.log(processList);
 
