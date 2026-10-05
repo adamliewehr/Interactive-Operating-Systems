@@ -18,12 +18,7 @@ let startTimeLabel, burstTimeLabel, priorityLabel, timeQuantumLabel;
 
 let processListWithMetrics;
 
-let totalTurnaroundTime,
-  totalResponseTime,
-  totalWaitingTime,
-  avgTurnaroundTime,
-  avgResponseTime,
-  avgWaitingTime;
+let avgTurnaroundTime, avgResponseTime, avgWaitingTime;
 
 function setup() {
   createCanvas(windowWidth, windowHeight - 100);
@@ -198,6 +193,7 @@ function go() {
   stepIndex = 0;
 
   processesCopy = structuredClone(processes); // this is so the original processes do not get changed
+  processesCopy.sort((a, b) => Number(a.startTime) - Number(b.startTime));
 
   switch (dropdown.value()) {
     case "First Come First Serve (FCFS)":
@@ -228,31 +224,13 @@ function go() {
   // this where we actually calculate the metrics for the algo
   if (dropdown.value() != "-- choose an algorithm --") {
     // only run this if they've selected an algo
-
-    totalTurnaroundTime = 0;
-    totalResponseTime = 0;
-    totalWaitingTime = 0;
-
-    for (const p of processListWithMetrics) {
-      // compute here
-      // just an intermediate step for debugging, not necessary
-      p.turnaroundTime = p.completionTime - p.startTime;
-      p.responseTime = p.firstExecutionTime - p.startTime;
-      p.waitingTime = p.turnaroundTime - p.burstTime;
-      totalTurnaroundTime += p.turnaroundTime;
-      totalResponseTime += p.responseTime;
-      totalWaitingTime += p.waitingTime;
-    }
-
-    avgTurnaroundTime = totalTurnaroundTime / processListWithMetrics.length;
-    avgResponseTime = totalResponseTime / processListWithMetrics.length;
-    avgWaitingTime = totalWaitingTime / processListWithMetrics.length;
+    [avgTurnaroundTime, avgResponseTime, avgWaitingTime] = calculateMetrics(
+      processListWithMetrics,
+    );
   }
 }
 
 function FCFS(processList) {
-  processList.sort((a, b) => Number(a.startTime) - Number(b.startTime));
-
   let xStart = 100;
   let rectWidth = 20;
   let rectHeight = 50;
@@ -308,8 +286,6 @@ function FCFS(processList) {
 }
 
 function SRTF(processList) {
-  processList.sort((a, b) => Number(a.startTime) - Number(b.startTime));
-
   // necessary for the algo
   let timePassed = 0;
   let finishedProcesses = 0;
@@ -396,8 +372,6 @@ function SRTF(processList) {
 }
 
 function SJF(processList) {
-  processList.sort((a, b) => Number(a.startTime) - Number(b.startTime));
-
   // necessary for the algo
   let timePassed = 0;
   let finishedProcesses = 0;
@@ -476,8 +450,6 @@ function SJF(processList) {
 }
 
 function RR(processList, tq) {
-  processList.sort((a, b) => Number(a.startTime) - Number(b.startTime));
-
   // necessary for the algo
   let timePassed = 0;
   let finishedProcesses = 0;
@@ -586,7 +558,6 @@ function RR(processList, tq) {
 }
 
 function PRI_nonPreemptive(processList) {
-  processList.sort((a, b) => Number(a.startTime) - Number(b.startTime));
   // console.log(processList);
 
   // necessary for the algo
@@ -666,7 +637,6 @@ function PRI_nonPreemptive(processList) {
 }
 
 function PRI_preemptive(processList) {
-  processList.sort((a, b) => Number(a.startTime) - Number(b.startTime));
   // console.log(processList);
 
   // necessary for the algo
@@ -760,4 +730,27 @@ function stepForward() {
     granttChartInfo[stepIndex].a = 255;
     stepIndex++;
   }
+}
+
+function calculateMetrics(toCalculate) {
+  let totalTurnaroundTime = 0;
+  let totalResponseTime = 0;
+  let totalWaitingTime = 0;
+
+  for (const p of toCalculate) {
+    // compute here
+    // just an intermediate step for debugging, not necessary
+    p.turnaroundTime = p.completionTime - p.startTime;
+    p.responseTime = p.firstExecutionTime - p.startTime;
+    p.waitingTime = p.turnaroundTime - p.burstTime;
+    totalTurnaroundTime += p.turnaroundTime;
+    totalResponseTime += p.responseTime;
+    totalWaitingTime += p.waitingTime;
+  }
+
+  let avgTurnaroundTime = totalTurnaroundTime / processListWithMetrics.length;
+  let avgResponseTime = totalResponseTime / processListWithMetrics.length;
+  let avgWaitingTime = totalWaitingTime / processListWithMetrics.length;
+
+  return [avgTurnaroundTime, avgResponseTime, avgWaitingTime];
 }
