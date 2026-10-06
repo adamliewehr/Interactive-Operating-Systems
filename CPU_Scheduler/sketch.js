@@ -20,7 +20,6 @@ let avgTurnaroundTime, avgResponseTime, avgWaitingTime;
 
 function setup() {
   createCanvas(windowWidth, windowHeight - 100);
-  // background(255);
 
   rectMode(CENTER);
 
@@ -46,7 +45,7 @@ function setup() {
 
   startInput = createInput();
   burstInput = createInput();
-  priority = createInput(1);
+  priority = createInput("1");
   timeQuantum = createInput();
 
   startInput.position(-999, -999);
@@ -89,9 +88,7 @@ function setup() {
   stepModeCheckbox = createCheckbox("Step Mode", false);
   stepModeCheckbox.position(20, 200);
   stepModeCheckbox.changed(() => {
-    stepModeCheckbox.checked()
-      ? stepButton.position(150, 200)
-      : stepButton.position(150, -200);
+    stepModeCheckbox.checked() ? stepButton.position(150, 200) : stepButton.position(150, -200);
   });
 
   stepButton = createButton("Step");
@@ -160,11 +157,7 @@ function draw() {
       // the user/program has finished stepping through the display. the metrics will be displayed then
 
       text("Metrics:", width / 2, height / 10);
-      text(
-        `avgTurnaroundTime: ${avgTurnaroundTime}`,
-        width / 2,
-        height / 10 + 30,
-      );
+      text(`avgTurnaroundTime: ${avgTurnaroundTime}`, width / 2, height / 10 + 30);
       text(`avgResponseTime: ${avgResponseTime}`, width / 2, height / 10 + 60);
       text(`avgWaitingTime: ${avgWaitingTime}`, width / 2, height / 10 + 90);
     }
@@ -177,51 +170,81 @@ function createProcess() {
     Number.isInteger(+burstInput.value()) &&
     Number.isInteger(+priority.value())
   ) {
-    processes.push(
-      new process(startInput.value(), burstInput.value(), priority.value()),
-    );
+    processes.push(new process(startInput.value(), burstInput.value(), priority.value()));
   }
 }
 
 function go() {
+  // change these to 0 so we start fresh
   ganttChartInfo.length = 0;
   stepIndex = 0;
 
-  processesCopy = structuredClone(processes); // this is so the original processes do not get changed
+  let processesCopy = structuredClone(processes); // this is so the original processes do not get changed
   processesCopy.sort((a, b) => Number(a.startTime) - Number(b.startTime));
+  // to make things easier later
+  for (let i = 0; i < processesCopy.length; i++) {
+    processesCopy[i].indexInProcessList = i;
+  }
+
+  let timePassed = 0;
+  let readyQueue = [];
+  let finishedProcesses = 0;
+  let alreadyAdded = [];
 
   switch (dropdown.value()) {
     case "First Come First Serve (FCFS)":
-      processListWithMetrics = FCFS(processesCopy);
+      processListWithMetrics = FCFS(processesCopy, timePassed, finishedProcesses, readyQueue, alreadyAdded);
       break;
     case "Shortest Job First (SJF)":
-      processListWithMetrics = SJF(processesCopy);
+      processListWithMetrics = SJF(processesCopy, timePassed, finishedProcesses, readyQueue, alreadyAdded);
       break;
 
     case "Shortest Remaining Time First (SRTF)":
-      processListWithMetrics = SRTF(processesCopy);
+      processListWithMetrics = SRTF(processesCopy, timePassed, finishedProcesses, readyQueue, alreadyAdded);
       break;
 
     case "Round Robin (RR)":
-      processListWithMetrics = RR(processesCopy, timeQuantum.value());
+      processListWithMetrics = RR(
+        processesCopy,
+        timePassed,
+        finishedProcesses,
+        readyQueue,
+        alreadyAdded,
+        timeQuantum.value(),
+      );
       break;
     case "Priority Scheduling (PRI) - PREEMPTIVE":
-      processListWithMetrics = PRI_preemptive(processesCopy);
+      processListWithMetrics = PRI_preemptive(processesCopy, timePassed, finishedProcesses, readyQueue, alreadyAdded);
+
       break;
     case "Priority Scheduling (PRI) - NON-PREEMPTIVE":
-      processListWithMetrics = PRI_nonPreemptive(processesCopy);
+      processListWithMetrics = PRI_nonPreemptive(
+        processesCopy,
+        timePassed,
+        finishedProcesses,
+        readyQueue,
+        alreadyAdded,
+      );
       break;
     default:
       // Code runs if no cases match
       console.log("no algo selected");
   }
 
+  // this for loop sets the burst time back to the original, since our algos rely on the burst time being editied during run time
+  for (const p of processListWithMetrics) {
+    p.burstTime =
+      processes[
+        processes.findIndex((pro) => {
+          return pro.num == p.num;
+        })
+      ].burstTime;
+  }
+
   // this where we actually calculate the metrics for the algo
   if (dropdown.value() != "-- choose an algorithm --") {
     // only run this if they've selected an algo
-    [avgTurnaroundTime, avgResponseTime, avgWaitingTime] = calculateMetrics(
-      processListWithMetrics,
-    );
+    [avgTurnaroundTime, avgResponseTime, avgWaitingTime] = calculateMetrics(processListWithMetrics);
   }
 }
 
@@ -241,197 +264,140 @@ function addToGanttChart(process, timePassed) {
     a: 0,
     time: timePassed,
   });
+
+  return timePassed + 1;
 }
 
-function FCFS(processList) {
-  let timePassed = 0;
-  let currentProcessIndex = 0;
+function startTimeCheck(processList, timePassed, readyQueue, alreadyAdded) {
+  // every time a process gets interupted, check all the processes, if it hasn't been added to the queue yet, and the start time has passed or is now, add it to the end of the ready queue
+  // also add that processe num to the alreadyAdded for tracking
+  for (const p of processList) {
+    if (+p.startTime <= timePassed && !alreadyAdded.includes(p.num)) {
+      readyQueue.push(p);
+      alreadyAdded.push(p.num);
+    }
+  }
+}
 
-  while (currentProcessIndex < processList.length) {
-    let currentProcess = processList[currentProcessIndex];
+function setCompletionTime(readyQueue, finishedProcesses, processList, timePassed) {
+  if (Number(readyQueue[0].burstTime) == 0) {
+    // if the current process is done
+    let currentProcess = readyQueue.shift();
 
-    if (timePassed >= +currentProcess.startTime) {
-      currentProcess.firstExecutionTime = timePassed;
-      for (let i = 0; i < +currentProcess.burstTime; i++) {
-        addToGanttChart(currentProcess, timePassed);
-        timePassed++;
+    // then change the value of .completionTime
+    processList[currentProcess.indexInProcessList].completionTime = timePassed;
+    return finishedProcesses + 1;
+  }
+
+  return finishedProcesses;
+}
+
+function setFirstExecutionTime(processList, readyQueue, timePassed) {
+  // change the value of .firstExecutionTime to the current time passed IF AND ONLY IF it hasn't been changed already
+  if (processList[readyQueue[0].indexInProcessList].firstExecutionTime == null) {
+    processList[readyQueue[0].indexInProcessList].firstExecutionTime = timePassed;
+  }
+}
+
+function FCFS(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
+  while (finishedProcesses != processList.length) {
+    startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
+
+    if (readyQueue.length > 0) {
+      setFirstExecutionTime(processList, readyQueue, timePassed);
+
+      for (let i = 0; i < readyQueue[0].burstTime; i++) {
+        // finish the current process
+        timePassed = addToGanttChart(readyQueue[0], timePassed);
       }
 
-      currentProcess.completionTime = timePassed;
-
-      currentProcessIndex++;
+      readyQueue[0].burstTime = 0;
+      finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
     } else {
-      // there is no process waiting, cpu idle
-      addToGanttChart(null, timePassed);
-
-      timePassed++;
+      // cpu idle
+      timePassed = addToGanttChart(null, timePassed);
     }
   }
 
   return processList;
 }
 
-function SRTF(processList) {
-  // necessary for the algo
-  let timePassed = 0;
-  let finishedProcesses = 0;
-  let readyQueue = [];
-
+function SRTF(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
   while (finishedProcesses != processList.length) {
-    for (const p of processList) {
-      if (+p.startTime == timePassed) {
-        readyQueue.push(p);
-      }
-    }
+    // check if any processes are past or at their their start time, if they are, add them to the queue
+    startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
 
     // move the processes with the shortest current burst time to the front of the ready queue
     readyQueue.sort((a, b) => Number(a.burstTime) - Number(b.burstTime));
 
     if (readyQueue.length > 0) {
       // if there is a processe in the ready queue
-
       readyQueue[0].burstTime -= 1;
 
-      // we need to find the process that is at the front of the ready queue inside the process list
-      // then change the value of .firstExecutionTime to the current time passed IF AND ONLY IF it hasn't been changed already
-      let indexOfCurrentProcess = processList.findIndex((process) => {
-        return process.num == readyQueue[0].num;
-      });
-      if (processList[indexOfCurrentProcess].firstExecutionTime == null) {
-        processList[indexOfCurrentProcess].firstExecutionTime = timePassed;
+      // change the value of .firstExecutionTime to the current time passed IF AND ONLY IF it hasn't been changed already
+      if (processList[readyQueue[0].indexInProcessList].firstExecutionTime == null) {
+        processList[readyQueue[0].indexInProcessList].firstExecutionTime = timePassed;
       }
 
-      addToGanttChart(readyQueue[0], timePassed);
+      timePassed = addToGanttChart(readyQueue[0], timePassed);
     } else {
       // cpu idle
 
-      addToGanttChart(null, timePassed);
+      timePassed = addToGanttChart(null, timePassed);
     }
-    timePassed++;
 
-    // we need to filter out any processes that have a burst time of 0
-    readyQueue = readyQueue.filter((element) => {
-      if (Number(element.burstTime) <= 0) {
-        finishedProcesses++;
-
-        // we need to find the process that matches with the one that has a burst time of 0
-        // then change the value of .completionTime IF AND ONLY IF it hasn't been changed already
-        let indexOfProcessBeingRemoved = processList.findIndex((process) => {
-          return process.num == element.num;
-        });
-        if (processList[indexOfProcessBeingRemoved].completionTime == null) {
-          processList[indexOfProcessBeingRemoved].completionTime = timePassed;
-        }
-      }
-
-      return Number(element.burstTime) > 0;
-    });
+    finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
   }
 
-  // console.log(tempOutput)
   return processList;
 }
 
-function SJF(processList) {
-  // necessary for the algo
-  let timePassed = 0;
-  let finishedProcesses = 0;
-  let readyQueue = [];
-
-  let alreadyAdded = [];
-
+function SJF(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
   while (finishedProcesses != processList.length) {
-    // every time a process finishes, check all the processes, if it hasn't been added to the queue yet, and the start time has passed, add it to the ready queue
-    for (const p of processList) {
-      if (+p.startTime <= timePassed && !alreadyAdded.includes(p.num)) {
-        readyQueue.push(p);
-        alreadyAdded.push(p.num);
-      }
-    }
+    startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
 
     // sort ready queue by burst time
     readyQueue.sort((a, b) => Number(a.burstTime) - Number(b.burstTime));
 
     // if theres something in the queue
     if (readyQueue.length > 0) {
-      // we need to find the process that is at the front of the ready queue inside the process list
-      // then change the value of .firstExecutionTime to the current time passed IF AND ONLY IF it hasn't been changed already
-      let indexOfCurrentProcess = processList.findIndex((process) => {
-        return process.num == readyQueue[0].num;
-      });
-      if (processList[indexOfCurrentProcess].firstExecutionTime == null) {
-        processList[indexOfCurrentProcess].firstExecutionTime = timePassed;
-      }
+      setFirstExecutionTime(processList, readyQueue, timePassed);
 
       for (let i = 0; i < readyQueue[0].burstTime; i++) {
         // finish the current process
-        addToGanttChart(readyQueue[0], timePassed);
-        timePassed++;
+        timePassed = addToGanttChart(readyQueue[0], timePassed);
       }
 
-      finishedProcesses++;
-
-      processList[indexOfCurrentProcess].completionTime = timePassed;
-
-      readyQueue.shift();
+      readyQueue[0].burstTime = 0;
+      finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
     } else {
       // ready queue is empty, cpu idle
-
-      addToGanttChart(null, timePassed);
-      timePassed++;
+      timePassed = addToGanttChart(null, timePassed);
     }
   }
 
   return processList;
 }
 
-function RR(processList, tq) {
-  // necessary for the algo
-  let timePassed = 0;
-  let finishedProcesses = 0;
-  let readyQueue = [];
-
-  let alreadyAdded = [];
-
+function RR(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded, tq) {
   while (finishedProcesses != processList.length) {
-    // every time a process gets interupted, check all the processes, if it hasn't been added to the queue yet, and the start time has passed or is now, add it to the end of the ready queue
-    // also add that processe num to the alreadyAdded for tracking
-    for (const p of processList) {
-      if (+p.startTime <= timePassed && !alreadyAdded.includes(p.num)) {
-        readyQueue.push(p);
-        alreadyAdded.push(p.num);
-      }
-    }
+    startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
 
     if (readyQueue.length > 0) {
       let finished = false;
 
-      // we need to find the process that is at the front of the ready queue inside the process list
-      // then change the value of .firstExecutionTime to the current time passed IF AND ONLY IF it hasn't been changed already
-      let indexOfCurrentProcess = processList.findIndex((process) => {
-        return process.num == readyQueue[0].num;
-      });
-      if (processList[indexOfCurrentProcess].firstExecutionTime == null) {
-        processList[indexOfCurrentProcess].firstExecutionTime = timePassed;
-      }
+      setFirstExecutionTime(processList, readyQueue, timePassed);
 
       for (let i = 0; i < tq; i++) {
         // only loop to the time quantum
         if (readyQueue[0].burstTime != 0) {
-          addToGanttChart(readyQueue[0], timePassed);
+          timePassed = addToGanttChart(readyQueue[0], timePassed);
           readyQueue[0].burstTime -= 1;
-          timePassed++;
 
           if (alreadyAdded.length != processList.length) {
-            // if we aren't at the last processes
+            // we aren't at the last processes
             // need to do this again since time passes
-            // add any processes to the ready queue that have a start time that is in the past or present
-            for (const p of processList) {
-              if (+p.startTime <= timePassed && !alreadyAdded.includes(p.num)) {
-                readyQueue.push(p);
-                alreadyAdded.push(p.num);
-              }
-            }
+            startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
           }
         } else {
           // the burst time of the current process went to 0 (it finished)
@@ -445,143 +411,69 @@ function RR(processList, tq) {
       }
 
       if (finished) {
-        let indexOfProcessBeingRemoved = processList.findIndex((process) => {
-          return process.num == readyQueue[0].num;
-        });
-        if (processList[indexOfProcessBeingRemoved].completionTime == null) {
-          processList[indexOfProcessBeingRemoved].completionTime = timePassed;
-        }
-
-        readyQueue.shift(); // removes the first element, since the current process finished
-        finishedProcesses++; // for while loop condition
+        finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
       } else {
         readyQueue.push(readyQueue.shift()); // if it didn't finish, move the process to the end of the queue
       }
     } else {
       // ready queue is empty, cpu idle
 
-      addToGanttChart(null, timePassed);
-      timePassed++;
+      timePassed = addToGanttChart(null, timePassed);
     }
   }
-  // console.log(processList)
   return processList;
 }
 
-function PRI_nonPreemptive(processList) {
-  // console.log(processList);
-
-  // necessary for the algo
-  let timePassed = 0;
-  let finishedProcesses = 0;
-  let readyQueue = [];
-
-  let alreadyAdded = [];
-
+function PRI_nonPreemptive(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
   while (finishedProcesses != processList.length) {
-    // every time a process finishes, check all the processes, if it hasn't been added to the queue yet, and the start time has passed, add it to the ready queue
-    for (const p of processList) {
-      if (+p.startTime <= timePassed && !alreadyAdded.includes(p.num)) {
-        readyQueue.push(p);
-        alreadyAdded.push(p.num);
-      }
-    }
+    startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
 
     // sort ready queue by priority
     readyQueue.sort((a, b) => Number(a.priority) - Number(b.priority));
 
     // if theres something in the queue
     if (readyQueue.length > 0) {
-      // we need to find the process that is at the front of the ready queue inside the process list
-      // then change the value of .firstExecutionTime to the current time passed IF AND ONLY IF it hasn't been changed already
-      let indexOfCurrentProcess = processList.findIndex((process) => {
-        return process.num == readyQueue[0].num;
-      });
-      if (processList[indexOfCurrentProcess].firstExecutionTime == null) {
-        processList[indexOfCurrentProcess].firstExecutionTime = timePassed;
-      }
+      setFirstExecutionTime(processList, readyQueue, timePassed);
 
       for (let i = 0; i < readyQueue[0].burstTime; i++) {
         // finish the current process
-        addToGanttChart(readyQueue[0], timePassed);
-        timePassed++;
+        timePassed = addToGanttChart(readyQueue[0], timePassed);
       }
 
-      finishedProcesses++;
-      processList[indexOfCurrentProcess].completionTime = timePassed;
-
-      readyQueue.shift();
+      readyQueue[0].burstTime = 0;
+      finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
     } else {
       // ready queue is empty, cpu idle
 
-      addToGanttChart(null, timePassed);
-      timePassed++;
+      timePassed = addToGanttChart(null, timePassed);
     }
   }
 
   return processList;
 }
 
-function PRI_preemptive(processList) {
-  // console.log(processList);
-
-  // necessary for the algo
-  let timePassed = 0;
-  let finishedProcesses = 0;
-  let readyQueue = [];
-
+function PRI_preemptive(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
   while (finishedProcesses != processList.length) {
-    for (const p of processList) {
-      if (+p.startTime == timePassed) {
-        readyQueue.push(p);
-      }
-    }
+    startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
 
     // move the processes with the shortest current burst time to the front of the ready queue
     readyQueue.sort((a, b) => Number(a.priority) - Number(b.priority));
 
     if (readyQueue.length > 0) {
       // if there is a processe in the ready queue
-
-      // we need to find the process that is at the front of the ready queue inside the process list
-      // then change the value of .firstExecutionTime to the current time passed IF AND ONLY IF it hasn't been changed already
-      let indexOfCurrentProcess = processList.findIndex((process) => {
-        return process.num == readyQueue[0].num;
-      });
-      if (processList[indexOfCurrentProcess].firstExecutionTime == null) {
-        processList[indexOfCurrentProcess].firstExecutionTime = timePassed;
-      }
-
       readyQueue[0].burstTime -= 1;
 
-      addToGanttChart(readyQueue[0], timePassed);
+      setFirstExecutionTime(processList, readyQueue, timePassed);
+
+      timePassed = addToGanttChart(readyQueue[0], timePassed);
     } else {
       // cpu idle
-
-      addToGanttChart(null, timePassed);
+      timePassed = addToGanttChart(null, timePassed);
     }
-    timePassed++;
 
-    // we need to filter out any processes that have a burst time of 0
-    readyQueue = readyQueue.filter((element) => {
-      if (Number(element.burstTime) <= 0) {
-        finishedProcesses++;
-
-        // we need to find the process that matches with the one that has a burst time of 0
-        // then change the value of .completionTime IF AND ONLY IF it hasn't been changed already
-        let indexOfProcessBeingRemoved = processList.findIndex((process) => {
-          return process.num == element.num;
-        });
-        if (processList[indexOfProcessBeingRemoved].completionTime == null) {
-          processList[indexOfProcessBeingRemoved].completionTime = timePassed;
-        }
-      }
-
-      return Number(element.burstTime) > 0;
-    });
+    // the function being called here has side effects
+    finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
   }
-
-  // console.log(tempOutput)
 
   return processList;
 }

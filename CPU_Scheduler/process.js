@@ -4,6 +4,9 @@ class process {
     this.burstTime = burstTime;
     this.priority = priority;
 
+    // this is after sorting, and will aid in the storage of the metric values below
+    this.indexInProcessList = null;
+
     // for metrics. this is what we extract during the algoirthm runtime
     this.completionTime = null; // when did the process complete all bursts
     this.firstExecutionTime = null; // when was the process first run
