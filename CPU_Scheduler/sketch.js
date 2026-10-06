@@ -88,15 +88,27 @@ function setup() {
   });
 
   // Create a checkbox with a label and default state (false = unchecked)
-  stepModeCheckbox = createCheckbox("Step Mode", false);
+  stepModeCheckbox = createCheckbox("Step Mode?", false);
   stepModeCheckbox.position(20, 200);
-  stepModeCheckbox.changed(() => {
-    stepModeCheckbox.checked() ? stepButton.position(150, 200) : stepButton.position(150, -200);
-  });
+  stepModeCheckbox.changed(stepModeActivated);
 
-  stepButton = createButton("Step");
-  stepButton.position(150, -200);
-  stepButton.mousePressed(stepForward);
+  stepForwardButton = createButton("Step Forward");
+  stepForwardButton.position(150, -200);
+  stepForwardButton.mousePressed(stepForward);
+
+  stepBackwardButton = createButton("Step Backward");
+  stepBackwardButton.position(150, -200);
+  stepBackwardButton.mousePressed(stepBackward);
+}
+
+function stepModeActivated() {
+  if (stepModeCheckbox.checked()) {
+    stepForwardButton.position(150, 240);
+    stepBackwardButton.position(20, 240);
+  } else {
+    stepForwardButton.position(150, -200);
+    stepBackwardButton.position(200, -200);
+  }
 }
 
 function algoSelectedEvent() {
@@ -169,7 +181,12 @@ function draw() {
     }
 
     if (ganttChartInfo.length && stepIndex == ganttChartInfo.length) {
-      readyQueueDraw.length = 0;
+      if (readyQueueDraw) {
+        readyQueueDraw.length = 0;
+      } else {
+        readyQueueDraw = [];
+      }
+
       // the user/program has finished stepping through the display. the metrics will be displayed then
 
       let metricPosX = 300;
@@ -519,7 +536,16 @@ function stepForward() {
     stepIndex++;
   }
 
-  readyQueueDraw = readyQueueStates.get(stepIndex - 1);
+  readyQueueDraw = readyQueueStates.get(stepIndex);
+}
+
+function stepBackward() {
+  if (ganttChartInfo.length && stepIndex > 0) {
+    stepIndex--;
+    ganttChartInfo[stepIndex].a = 0;
+  }
+
+  readyQueueDraw = readyQueueStates.get(stepIndex);
 }
 
 function calculateMetrics(toCalculate) {
