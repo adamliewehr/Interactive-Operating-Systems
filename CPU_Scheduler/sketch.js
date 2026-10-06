@@ -4,6 +4,9 @@ let startInput, burstTime, timeQuantum, priority;
 let submitProcess, startRun, clearProcesses;
 let processes = [];
 let ganttChartInfo = [];
+let readyQueueStates = new Map();
+
+let readyQueueDraw = [];
 
 let stepModeCheckbox, stepButton;
 let run = false;
@@ -46,7 +49,7 @@ function setup() {
   startInput = createInput();
   burstInput = createInput();
   priority = createInput("1");
-  timeQuantum = createInput();
+  timeQuantum = createInput("1");
 
   startInput.position(-999, -999);
   burstInput.position(-999, -999);
@@ -130,8 +133,23 @@ function draw() {
     // if there is an algo selected, do everything
     for (const p of processes) {
       rectMode(CENTER);
-      p.update();
+
       p.display();
+    }
+
+    fill(0);
+    textAlign(CENTER);
+    text("Ready Queue", 100, height / 1.1 - 20);
+
+    if (readyQueueDraw) {
+      for (const proc of readyQueueDraw) {
+        fill(proc.red, proc.green, proc.blue);
+        rect(proc.x, proc.y, proc.width, proc.height);
+        fill(0);
+        noStroke();
+        textAlign(CENTER);
+        text(proc.num, proc.x, proc.y);
+      }
     }
 
     for (const r of ganttChartInfo) {
@@ -145,19 +163,18 @@ function draw() {
     }
 
     if (!stepModeCheckbox.checked()) {
-      if (ganttChartInfo.length && stepIndex < ganttChartInfo.length) {
-        if (!(frameCount % delay)) {
-          ganttChartInfo[stepIndex].a = 255;
-          stepIndex++;
-        }
+      if (!(frameCount % delay)) {
+        stepForward();
       }
     }
 
     if (ganttChartInfo.length && stepIndex == ganttChartInfo.length) {
+      readyQueueDraw.length = 0;
       // the user/program has finished stepping through the display. the metrics will be displayed then
 
-      let metricPosX = 250;
+      let metricPosX = 300;
       let metricPosY = height / 8;
+      fill(0);
 
       text("Metrics:", metricPosX, metricPosY);
       text(`avgTurnaroundTime: ${avgTurnaroundTime}`, metricPosX, metricPosY + 30);
@@ -252,11 +269,16 @@ function go() {
 }
 
 function snapshotReadyQueue(readyQueue, timePassed) {
-  console.log(readyQueue);
+  // get it ready to draw
 
-  for (const p of readyQueue) {
-    console.log(p.num);
+  readyQueue = structuredClone(readyQueue);
+
+  for (let i = 0; i < readyQueue.length; i++) {
+    readyQueue[i].x = 100 + i * 50;
+    readyQueue[i].y = height / 1.1 + 50;
   }
+
+  readyQueueStates.set(timePassed, structuredClone(readyQueue));
 }
 
 function addToGanttChart(process, timePassed, readyQueue) {
@@ -496,6 +518,8 @@ function stepForward() {
     ganttChartInfo[stepIndex].a = 255;
     stepIndex++;
   }
+
+  readyQueueDraw = readyQueueStates.get(stepIndex - 1);
 }
 
 function calculateMetrics(toCalculate) {

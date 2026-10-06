@@ -34,37 +34,25 @@ class process {
     this.width = 50;
     this.height = 50;
   }
-  update() {}
   display() {
     // console.log(processes.length);
     // colorMode(HSB)
     fill(this.red, this.green, this.blue);
+    stroke(0);
+    strokeWeight(1);
     rect(this.x, this.y, this.width, this.height);
 
     fill(0);
+    noStroke();
     textAlign(CENTER);
 
     text(this.num, this.x, this.y);
 
     textAlign(LEFT);
 
-    text(
-      `start: ${this.startTime}`,
-      this.x - this.width / 2,
-      this.y + this.height / 2 + 20,
-    );
-    text(
-      `burst: ${this.burstTime}`,
-      this.x - this.width / 2,
-      this.y + this.height / 2 + 40,
-    );
+    text(`start: ${this.startTime}`, this.x - this.width / 2, this.y + this.height / 2 + 20);
+    text(`burst: ${this.burstTime}`, this.x - this.width / 2, this.y + this.height / 2 + 40);
 
-    this.priority
-      ? text(
-          `priority: ${this.priority}`,
-          this.x - this.width / 2,
-          this.y + this.height / 2 + 60,
-        )
-      : null;
+    this.priority ? text(`priority: ${this.priority}`, this.x - this.width / 2, this.y + this.height / 2 + 60) : null;
   }
 }
