@@ -251,7 +251,15 @@ function go() {
   }
 }
 
-function addToGanttChart(process, timePassed) {
+function snapshotReadyQueue(readyQueue, timePassed) {
+  console.log(readyQueue);
+
+  for (const p of readyQueue) {
+    console.log(p.num);
+  }
+}
+
+function addToGanttChart(process, timePassed, readyQueue) {
   let xStart = 100;
   let rectWidth = 20;
   let rectHeight = 50;
@@ -267,6 +275,8 @@ function addToGanttChart(process, timePassed) {
     a: 0,
     time: timePassed,
   });
+
+  snapshotReadyQueue(readyQueue, timePassed);
 
   return timePassed + 1;
 }
@@ -311,14 +321,14 @@ function FCFS(processList, timePassed, finishedProcesses, readyQueue, alreadyAdd
 
       for (let i = 0; i < readyQueue[0].burstTime; i++) {
         // finish the current process
-        timePassed = addToGanttChart(readyQueue[0], timePassed);
+        timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
       }
 
       readyQueue[0].burstTime = 0;
       finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
     } else {
       // cpu idle
-      timePassed = addToGanttChart(null, timePassed);
+      timePassed = addToGanttChart(null, timePassed, readyQueue);
     }
   }
 
@@ -342,11 +352,11 @@ function SRTF(processList, timePassed, finishedProcesses, readyQueue, alreadyAdd
         processList[readyQueue[0].indexInProcessList].firstExecutionTime = timePassed;
       }
 
-      timePassed = addToGanttChart(readyQueue[0], timePassed);
+      timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
     } else {
       // cpu idle
 
-      timePassed = addToGanttChart(null, timePassed);
+      timePassed = addToGanttChart(null, timePassed, readyQueue);
     }
 
     finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
@@ -368,14 +378,14 @@ function SJF(processList, timePassed, finishedProcesses, readyQueue, alreadyAdde
 
       for (let i = 0; i < readyQueue[0].burstTime; i++) {
         // finish the current process
-        timePassed = addToGanttChart(readyQueue[0], timePassed);
+        timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
       }
 
       readyQueue[0].burstTime = 0;
       finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
     } else {
       // ready queue is empty, cpu idle
-      timePassed = addToGanttChart(null, timePassed);
+      timePassed = addToGanttChart(null, timePassed, readyQueue);
     }
   }
 
@@ -394,7 +404,7 @@ function RR(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded
       for (let i = 0; i < tq; i++) {
         // only loop to the time quantum
         if (readyQueue[0].burstTime != 0) {
-          timePassed = addToGanttChart(readyQueue[0], timePassed);
+          timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
           readyQueue[0].burstTime -= 1;
 
           if (alreadyAdded.length != processList.length) {
@@ -421,7 +431,7 @@ function RR(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded
     } else {
       // ready queue is empty, cpu idle
 
-      timePassed = addToGanttChart(null, timePassed);
+      timePassed = addToGanttChart(null, timePassed, readyQueue);
     }
   }
   return processList;
@@ -440,7 +450,7 @@ function PRI_nonPreemptive(processList, timePassed, finishedProcesses, readyQueu
 
       for (let i = 0; i < readyQueue[0].burstTime; i++) {
         // finish the current process
-        timePassed = addToGanttChart(readyQueue[0], timePassed);
+        timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
       }
 
       readyQueue[0].burstTime = 0;
@@ -448,7 +458,7 @@ function PRI_nonPreemptive(processList, timePassed, finishedProcesses, readyQueu
     } else {
       // ready queue is empty, cpu idle
 
-      timePassed = addToGanttChart(null, timePassed);
+      timePassed = addToGanttChart(null, timePassed, readyQueue);
     }
   }
 
@@ -468,10 +478,10 @@ function PRI_preemptive(processList, timePassed, finishedProcesses, readyQueue, 
 
       setFirstExecutionTime(processList, readyQueue, timePassed);
 
-      timePassed = addToGanttChart(readyQueue[0], timePassed);
+      timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
     } else {
       // cpu idle
-      timePassed = addToGanttChart(null, timePassed);
+      timePassed = addToGanttChart(null, timePassed, readyQueue);
     }
 
     // the function being called here has side effects
