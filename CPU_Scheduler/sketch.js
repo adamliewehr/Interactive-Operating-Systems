@@ -156,10 +156,13 @@ function draw() {
     if (ganttChartInfo.length && stepIndex == ganttChartInfo.length) {
       // the user/program has finished stepping through the display. the metrics will be displayed then
 
-      text("Metrics:", width / 2, height / 10);
-      text(`avgTurnaroundTime: ${avgTurnaroundTime}`, width / 2, height / 10 + 30);
-      text(`avgResponseTime: ${avgResponseTime}`, width / 2, height / 10 + 60);
-      text(`avgWaitingTime: ${avgWaitingTime}`, width / 2, height / 10 + 90);
+      let metricPosX = 250;
+      let metricPosY = height / 8;
+
+      text("Metrics:", metricPosX, metricPosY);
+      text(`avgTurnaroundTime: ${avgTurnaroundTime}`, metricPosX, metricPosY + 30);
+      text(`avgResponseTime: ${avgResponseTime}`, metricPosX, metricPosY + 60);
+      text(`avgWaitingTime: ${avgWaitingTime}`, metricPosX, metricPosY + 90);
     }
   }
 }
