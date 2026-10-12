@@ -89,6 +89,8 @@ function setup() {
   clearProcesses.mousePressed(() => {
     processes.length = 0; // setting a list's length equal to 0 clears the list
     ganttChartInfo.length = 0;
+    readyQueueDraw.length = 0;
+    readyQueueStates.clear();
     stepIndex = 0;
   });
 
