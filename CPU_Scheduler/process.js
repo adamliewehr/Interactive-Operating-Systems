@@ -55,4 +55,14 @@ class process {
 
     this.priority ? text(`priority: ${this.priority}`, this.x - this.width / 2, this.y + this.height / 2 + 60) : null;
   }
+
+  checkForRollOver(xPos, yPos) {
+    if (dist(xPos, yPos, this.x, this.y) < 50) {
+      return true;
+    }
+    // if (mouseX > this.x - this.width / 2 && mouseX < this.x + this.width / 2) {
+
+    // }
+    return false;
+  }
 }

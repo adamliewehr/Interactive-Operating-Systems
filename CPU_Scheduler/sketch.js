@@ -8,7 +8,7 @@ let readyQueueStates = new Map();
 
 let readyQueueDraw = [];
 
-let stepModeCheckbox, stepButton;
+let stepModeCheckbox, stepForwardButton, stepBackwardButton;
 let run = false;
 let stepIndex = 0;
 
@@ -20,6 +20,11 @@ let startTimeLabel, burstTimeLabel, priorityLabel, timeQuantumLabel;
 let processListWithMetrics;
 
 let avgTurnaroundTime, avgResponseTime, avgWaitingTime;
+
+let startInputEdit, burstInputEdit, priorityEdit;
+let startTimeLabelEdit, burstTimeLabelEdit, priorityLabelEdit;
+let submitProcessEditButton, cancelProcessEditButton;
+let processBeingChanged = { num: null, on: false };
 
 function setup() {
   createCanvas(windowWidth, windowHeight - 100);
@@ -99,6 +104,90 @@ function setup() {
   stepBackwardButton = createButton("Step Backward");
   stepBackwardButton.position(150, -200);
   stepBackwardButton.mousePressed(stepBackward);
+
+  // when a user wants to edit a process
+
+  startInputEdit = createInput();
+  burstInputEdit = createInput();
+  priorityEdit = createInput();
+
+  startInputEdit.position(-999, -999);
+  burstInputEdit.position(-999, -999);
+  priorityEdit.position(-999, -999);
+
+  submitProcessEditButton = createButton("Submit Edits");
+  submitProcessEditButton.position(-999, -999);
+  submitProcessEditButton.mousePressed(submitProcessEdit);
+
+  cancelProcessEditButton = createButton("Cancel Edits");
+  cancelProcessEditButton.position(-999, -999);
+  cancelProcessEditButton.mousePressed(moveEditLabelsBack);
+
+  // labels
+  startTimeLabelEdit = createP("Start Time");
+  startTimeLabelEdit.position(-999, -999);
+
+  burstTimeLabelEdit = createP("Burst Time");
+  burstTimeLabelEdit.position(-999, -999);
+
+  priorityLabelEdit = createP("Priority");
+  priorityLabelEdit.position(-999, -999);
+}
+
+function editProcessDisplay(processNum) {
+  processBeingChanged.num = processNum;
+  processBeingChanged.on = true;
+
+  currentProcessIndex = processes.findIndex((p) => {
+    return p.num == processNum;
+  });
+
+  // move all the inputs to the correct location and fill them with the correct values
+  startInputEdit.position(300, height / 2 - 80);
+  startInputEdit.value(processes[currentProcessIndex].startTime);
+
+  burstInputEdit.position(450, height / 2 - 80);
+  burstInputEdit.value(processes[currentProcessIndex].burstTime);
+
+  priorityEdit.position(600, height / 2 - 80);
+  priorityEdit.value(processes[currentProcessIndex].priority);
+
+  // move labels too
+
+  startTimeLabelEdit.position(300, height / 2 - 120);
+  burstTimeLabelEdit.position(450, height / 2 - 120);
+  priorityLabelEdit.position(600, height / 2 - 120);
+
+  // move buttons
+  submitProcessEditButton.position(750, height / 2 - 80);
+  cancelProcessEditButton.position(750, height / 2 - 50);
+}
+
+function submitProcessEdit() {
+  moveEditLabelsBack();
+  // change the values inside the process object
+
+  currentProcessIndex = processes.findIndex((p) => {
+    return p.num == processBeingChanged.num;
+  });
+
+  processes[currentProcessIndex].startTime = startInputEdit.value();
+  processes[currentProcessIndex].burstTime = burstInputEdit.value();
+  processes[currentProcessIndex].priority = priorityEdit.value();
+}
+
+function moveEditLabelsBack() {
+  processBeingChanged.on = false;
+  // move the inputs and labels back to -999 -999
+
+  startInputEdit.position(-999, -999);
+  burstInputEdit.position(-999, -999);
+  priorityEdit.position(-999, -999);
+  submitProcessEditButton.position(-999, -999);
+  cancelProcessEditButton.position(-999, -999);
+  startTimeLabelEdit.position(-999, -999);
+  burstTimeLabelEdit.position(-999, -999);
+  priorityLabelEdit.position(-999, -999);
 }
 
 function stepModeActivated() {
@@ -138,6 +227,9 @@ function draw() {
   fill(0);
 
   text("Current Processes:", 100, height / 2 - 100);
+  text("Click a process to edit its values", 100, height / 2 - 80);
+
+  processBeingChanged.on ? text(processBeingChanged.num, 250, height / 2 - 80) : null;
 
   text("In Order:", 100, height / 1.5);
 
@@ -190,13 +282,22 @@ function draw() {
       // the user/program has finished stepping through the display. the metrics will be displayed then
 
       let metricPosX = 300;
-      let metricPosY = height / 8;
+      let metricPosY = height / 7;
       fill(0);
 
       text("Metrics:", metricPosX, metricPosY);
       text(`avgTurnaroundTime: ${avgTurnaroundTime}`, metricPosX, metricPosY + 30);
       text(`avgResponseTime: ${avgResponseTime}`, metricPosX, metricPosY + 60);
       text(`avgWaitingTime: ${avgWaitingTime}`, metricPosX, metricPosY + 90);
+    }
+  }
+}
+
+function mousePressed() {
+  for (const p of processes) {
+    if (p.checkForRollOver(mouseX, mouseY)) {
+      editProcessDisplay(p.num);
+      // console.log(p.num);
     }
   }
 }
@@ -518,13 +619,12 @@ function PRI_preemptive(processList, timePassed, finishedProcesses, readyQueue, 
       setFirstExecutionTime(processList, readyQueue, timePassed);
 
       timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
+      // the function being called here has side effects
+      finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
     } else {
       // cpu idle
       timePassed = addToGanttChart(null, timePassed, readyQueue);
     }
-
-    // the function being called here has side effects
-    finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
   }
 
   return processList;
