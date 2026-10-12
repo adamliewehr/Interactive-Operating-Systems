@@ -12,8 +12,6 @@ let stepModeCheckbox, stepForwardButton, stepBackwardButton;
 let run = false;
 let stepIndex = 0;
 
-let delay = 5;
-
 // labels
 let startTimeLabel, burstTimeLabel, priorityLabel, timeQuantumLabel;
 
@@ -25,6 +23,8 @@ let startInputEdit, burstInputEdit, priorityEdit;
 let startTimeLabelEdit, burstTimeLabelEdit, priorityLabelEdit;
 let submitProcessEditButton, cancelProcessEditButton;
 let processBeingChanged = { num: null, on: false };
+
+let slider, sliderLabel;
 
 function setup() {
   createCanvas(windowWidth, windowHeight - 100);
@@ -132,6 +132,14 @@ function setup() {
 
   priorityLabelEdit = createP("Priority");
   priorityLabelEdit.position(-999, -999);
+
+  // slider
+  sliderLabel = createP("Delay");
+  sliderLabel.position(150, 155);
+
+  slider = createSlider(0, 50, 10, 1);
+  slider.position(200, 170);
+  slider.size(150);
 }
 
 function editProcessDisplay(processNum) {
@@ -226,6 +234,8 @@ function draw() {
   background(255);
   fill(0);
 
+  text(slider.value(), 370, 185);
+
   text("Current Processes:", 100, height / 2 - 100);
   text("Click a process to edit its values", 100, height / 2 - 80);
 
@@ -267,7 +277,7 @@ function draw() {
     }
 
     if (!stepModeCheckbox.checked()) {
-      if (!(frameCount % delay)) {
+      if (!(frameCount % slider.value())) {
         stepForward();
       }
     }
@@ -281,7 +291,7 @@ function draw() {
 
       // the user/program has finished stepping through the display. the metrics will be displayed then
 
-      let metricPosX = 300;
+      let metricPosX = 500;
       let metricPosY = height / 7;
       fill(0);
 
