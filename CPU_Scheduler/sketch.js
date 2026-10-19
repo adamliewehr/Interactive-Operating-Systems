@@ -499,10 +499,7 @@ function SRTF(processList, timePassed, finishedProcesses, readyQueue, alreadyAdd
       // if there is a processe in the ready queue
       readyQueue[0].burstTime -= 1;
 
-      // change the value of .firstExecutionTime to the current time passed IF AND ONLY IF it hasn't been changed already
-      if (processList[readyQueue[0].indexInProcessList].firstExecutionTime == null) {
-        processList[readyQueue[0].indexInProcessList].firstExecutionTime = timePassed;
-      }
+      setFirstExecutionTime(processList, readyQueue, timePassed);
 
       timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
     } else {
