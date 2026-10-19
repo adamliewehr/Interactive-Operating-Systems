@@ -42,8 +42,8 @@ function setup() {
 
   dropdown.option("First Come First Serve (FCFS)");
   dropdown.option("Shortest Job First (SJF)");
-  dropdown.option("Round Robin (RR)");
   dropdown.option("Shortest Remaining Time First (SRTF)");
+  dropdown.option("Round Robin (RR)");
   dropdown.option("Priority Scheduling (PRI) - PREEMPTIVE");
   dropdown.option("Priority Scheduling (PRI) - NON-PREEMPTIVE");
 
@@ -163,7 +163,6 @@ function editProcessDisplay(processNum) {
   priorityEdit.value(processes[currentProcessIndex].priority);
 
   // move labels too
-
   startTimeLabelEdit.position(300, height / 2 - 120);
   burstTimeLabelEdit.position(450, height / 2 - 120);
   priorityLabelEdit.position(600, height / 2 - 120);
@@ -205,8 +204,8 @@ function stepModeActivated() {
     stepForwardButton.position(150, 240);
     stepBackwardButton.position(20, 240);
   } else {
-    stepForwardButton.position(150, -200);
-    stepBackwardButton.position(200, -200);
+    stepForwardButton.position(-999, -999);
+    stepBackwardButton.position(-999, -999);
   }
 }
 
@@ -233,6 +232,7 @@ function algoSelectedEvent() {
 }
 
 function draw() {
+  textAlign(CENTER);
   background(255);
   fill(0);
 
@@ -243,7 +243,7 @@ function draw() {
 
   processBeingChanged.on ? text(processBeingChanged.num, 250, height / 2 - 80) : null;
 
-  text("In Order:", 100, height / 1.5);
+  text("Process Schedule:", 100, height / 1.5);
 
   if (selectedAlgo) {
     // if there is an algo selected, do everything
@@ -254,7 +254,6 @@ function draw() {
     }
 
     fill(0);
-    textAlign(CENTER);
     text("Ready Queue", 100, height / 1.1 - 20);
 
     if (readyQueueDraw) {
@@ -309,16 +308,15 @@ function mousePressed() {
   for (const p of processes) {
     if (p.checkForRollOver(mouseX, mouseY)) {
       editProcessDisplay(p.num);
-      // console.log(p.num);
     }
   }
 }
 
 function createProcess() {
   if (
-    Number.isInteger(+startInput.value()) &&
-    Number.isInteger(+burstInput.value()) &&
-    Number.isInteger(+priority.value())
+    Number.isInteger(parseInt(startInput.value())) &&
+    Number.isInteger(parseInt(burstInput.value())) &&
+    Number.isInteger(parseInt(priority.value()))
   ) {
     processes.push(new process(startInput.value(), burstInput.value(), priority.value()));
   }
@@ -554,11 +552,7 @@ function RR(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded
           timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
           readyQueue[0].burstTime -= 1;
 
-          if (alreadyAdded.length != processList.length) {
-            // we aren't at the last processes
-            // need to do this again since time passes
-            startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
-          }
+          startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
         } else {
           // the burst time of the current process went to 0 (it finished)
 
