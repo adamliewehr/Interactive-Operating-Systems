@@ -471,12 +471,8 @@ function FCFS(processList, timePassed, finishedProcesses, readyQueue, alreadyAdd
     if (readyQueue.length > 0) {
       setFirstExecutionTime(processList, readyQueue, timePassed);
 
-      for (let i = 0; i < readyQueue[0].burstTime; i++) {
-        // finish the current process
-        timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
-      }
-
-      readyQueue[0].burstTime = 0;
+      timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
+      readyQueue[0].burstTime -= 1;
       finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
     } else {
       // cpu idle
@@ -496,42 +492,44 @@ function SRTF(processList, timePassed, finishedProcesses, readyQueue, alreadyAdd
     readyQueue.sort((a, b) => Number(a.burstTime) - Number(b.burstTime));
 
     if (readyQueue.length > 0) {
-      // if there is a processe in the ready queue
       readyQueue[0].burstTime -= 1;
-
       setFirstExecutionTime(processList, readyQueue, timePassed);
-
       timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
+      finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
     } else {
       // cpu idle
 
       timePassed = addToGanttChart(null, timePassed, readyQueue);
     }
-
-    finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
   }
 
   return processList;
 }
 
 function SJF(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
+  let finished = true;
   while (finishedProcesses != processList.length) {
     startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
 
-    // sort ready queue by burst time
-    readyQueue.sort((a, b) => Number(a.burstTime) - Number(b.burstTime));
+    if (finished) {
+      // sort reay queue by burst time
+      readyQueue.sort((a, b) => Number(a.burstTime) - Number(b.burstTime));
+    }
 
     // if theres something in the queue
     if (readyQueue.length > 0) {
+      readyQueue[0].burstTime -= 1;
       setFirstExecutionTime(processList, readyQueue, timePassed);
+      timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
 
-      for (let i = 0; i < readyQueue[0].burstTime; i++) {
-        // finish the current process
-        timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
-      }
-
-      readyQueue[0].burstTime = 0;
+      let finishedProcessesSave = finishedProcesses;
       finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
+
+      if (finishedProcesses != finishedProcessesSave) {
+        finished = true;
+      } else {
+        finished = false;
+      }
     } else {
       // ready queue is empty, cpu idle
       timePassed = addToGanttChart(null, timePassed, readyQueue);
@@ -587,23 +585,29 @@ function RR(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded
 }
 
 function PRI_nonPreemptive(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
+  let finished = true;
+
   while (finishedProcesses != processList.length) {
     startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
 
-    // sort ready queue by priority
-    readyQueue.sort((a, b) => Number(a.priority) - Number(b.priority));
+    if (finished) {
+      // sort ready queue by priority
+      readyQueue.sort((a, b) => Number(a.priority) - Number(b.priority));
+    }
 
     // if theres something in the queue
     if (readyQueue.length > 0) {
+      readyQueue[0].burstTime -= 1;
       setFirstExecutionTime(processList, readyQueue, timePassed);
+      timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
 
-      for (let i = 0; i < readyQueue[0].burstTime; i++) {
-        // finish the current process
-        timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
-      }
-
-      readyQueue[0].burstTime = 0;
+      let finishedProcessesSave = finishedProcesses;
       finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
+      if (finishedProcesses != finishedProcessesSave) {
+        finished = true;
+      } else {
+        finished = false;
+      }
     } else {
       // ready queue is empty, cpu idle
 
