@@ -1,24 +1,24 @@
 class process {
-  constructor(startTime, burstTime, priority) {
+  constructor(startTime, burstTime, size) {
     this.startTime = startTime; // aka arrival time
     this.burstTime = burstTime;
-    this.priority = priority;
+    this.size = size;
 
     // this is after sorting, and will aid in the storage of the metric values below
     this.indexInProcessList = null;
 
-    // for metrics. this is what we extract during the algoirthm runtime
-    this.completionTime = null; // when did the process complete all bursts
-    this.firstExecutionTime = null; // when was the process first run
+    // // for metrics. this is what we extract during the algoirthm runtime
+    // this.completionTime = null; // when did the process complete all bursts
+    // this.firstExecutionTime = null; // when was the process first run
 
-    // actual values for metrics. we calculate these after using all previous variables
-    // Formula: Turnaround Time = Completion Time - Arrival Time
-    this.turnaroundTime = null;
-    // Response Time = First Execution Time - Arrival Time
-    this.responseTime = null;
+    // // actual values for metrics. we calculate these after using all previous variables
+    // // Formula: Turnaround Time = Completion Time - Arrival Time
+    // this.turnaroundTime = null;
+    // // Response Time = First Execution Time - Arrival Time
+    // this.responseTime = null;
 
-    // Waiting Time = Turnaround Time - Burst Time
-    this.waitingTime = null;
+    // // Waiting Time = Turnaround Time - Burst Time
+    // this.waitingTime = null;
 
     // color
     this.red = random(100, 255);
@@ -52,8 +52,9 @@ class process {
 
     text(`start: ${this.startTime}`, this.x - this.width / 2, this.y + this.height / 2 + 20);
     text(`burst: ${this.burstTime}`, this.x - this.width / 2, this.y + this.height / 2 + 40);
+    text(`size: ${this.size}`, this.x - this.width / 2, this.y + this.height / 2 + 60);
 
-    this.priority ? text(`priority: ${this.priority}`, this.x - this.width / 2, this.y + this.height / 2 + 60) : null;
+    // this.priority ? text(`priority: ${this.priority}`, this.x - this.width / 2, this.y + this.height / 2 + 60) : null;
   }
 
   checkForRollOver(xPos, yPos) {

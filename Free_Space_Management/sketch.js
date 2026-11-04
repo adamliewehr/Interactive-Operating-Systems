@@ -1,6 +1,6 @@
 let dropdown;
 let selectedAlgo;
-let startInput, burstTime, timeQuantum, priority;
+let startInput, burstTime, size;
 let submitProcess, startRun, clearProcesses;
 let processes = [];
 let ganttChartInfo = [];
@@ -13,7 +13,7 @@ let run = false;
 let stepIndex = 0;
 
 // labels
-let startTimeLabel, burstTimeLabel, priorityLabel, timeQuantumLabel;
+let startTimeLabel, burstTimeLabel, sizeLabel;
 
 let processListWithMetrics;
 
@@ -40,12 +40,9 @@ function setup() {
   dropdown.disable("-- choose an algorithm --");
   dropdown.selected("-- choose an algorithm --");
 
-  dropdown.option("First Come First Serve (FCFS)");
-  dropdown.option("Shortest Job First (SJF)");
-  dropdown.option("Shortest Remaining Time First (SRTF)");
-  dropdown.option("Round Robin (RR)");
-  dropdown.option("Priority Scheduling (PRI) - PREEMPTIVE");
-  dropdown.option("Priority Scheduling (PRI) - NON-PREEMPTIVE");
+  dropdown.option("FIRST FIT");
+  dropdown.option("BEST FIT");
+  dropdown.option("WORST FIT");
 
   // call this function when the item in the dropdown changes
   dropdown.changed(algoSelectedEvent);
@@ -53,13 +50,11 @@ function setup() {
 
   startInput = createInput();
   burstInput = createInput();
-  priority = createInput("1");
-  timeQuantum = createInput("1");
+  size = createInput();
 
   startInput.position(-999, -999);
   burstInput.position(-999, -999);
-  priority.position(-999, -999);
-  timeQuantum.position(-999, -999);
+  size.position(-999, -999);
 
   // labels
   startTimeLabel = createP("Start Time");
@@ -68,11 +63,8 @@ function setup() {
   burstTimeLabel = createP("Burst Time");
   burstTimeLabel.position(-999, -999);
 
-  priorityLabel = createP("Priority (lower = higher priority)");
-  priorityLabel.position(-999, -999);
-
-  timeQuantumLabel = createP("Time Quantum");
-  timeQuantumLabel.position(-999, -999);
+  sizeLabel = createP("Size");
+  sizeLabel.position(-999, -999);
 
   submitProcess = createButton("Add Process");
   submitProcess.position(20, 110);
@@ -88,9 +80,9 @@ function setup() {
   clearProcesses.position(20, 140);
   clearProcesses.mousePressed(() => {
     processes.length = 0; // setting a list's length equal to 0 clears the list
-    ganttChartInfo.length = 0;
-    readyQueueDraw.length = 0;
-    readyQueueStates.clear();
+    // ganttChartInfo.length = 0;
+    // readyQueueDraw.length = 0;
+    // readyQueueStates.clear();
     stepIndex = 0;
   });
 
@@ -111,11 +103,11 @@ function setup() {
 
   startInputEdit = createInput();
   burstInputEdit = createInput();
-  priorityEdit = createInput();
+  sizeEdit = createInput();
 
   startInputEdit.position(-999, -999);
   burstInputEdit.position(-999, -999);
-  priorityEdit.position(-999, -999);
+  sizeEdit.position(-999, -999);
 
   submitProcessEditButton = createButton("Submit Edits");
   submitProcessEditButton.position(-999, -999);
@@ -132,8 +124,8 @@ function setup() {
   burstTimeLabelEdit = createP("Burst Time");
   burstTimeLabelEdit.position(-999, -999);
 
-  priorityLabelEdit = createP("Priority");
-  priorityLabelEdit.position(-999, -999);
+  sizeLabelEdit = createP("Size");
+  sizeLabelEdit.position(-999, -999);
 
   // slider
   sliderLabel = createP("Delay");
@@ -159,13 +151,13 @@ function editProcessDisplay(processNum) {
   burstInputEdit.position(450, height / 2 - 80);
   burstInputEdit.value(processes[currentProcessIndex].burstTime);
 
-  priorityEdit.position(600, height / 2 - 80);
-  priorityEdit.value(processes[currentProcessIndex].priority);
+  sizeEdit.position(600, height / 2 - 80);
+  sizeEdit.value(processes[currentProcessIndex].size);
 
   // move labels too
   startTimeLabelEdit.position(300, height / 2 - 120);
   burstTimeLabelEdit.position(450, height / 2 - 120);
-  priorityLabelEdit.position(600, height / 2 - 120);
+  sizeLabelEdit.position(600, height / 2 - 120);
 
   // move buttons
   submitProcessEditButton.position(750, height / 2 - 80);
@@ -182,7 +174,7 @@ function submitProcessEdit() {
 
   processes[currentProcessIndex].startTime = startInputEdit.value();
   processes[currentProcessIndex].burstTime = burstInputEdit.value();
-  processes[currentProcessIndex].priority = priorityEdit.value();
+  processes[currentProcessIndex].size = sizeEdit.value();
 }
 
 function moveEditLabelsBack() {
@@ -191,12 +183,12 @@ function moveEditLabelsBack() {
 
   startInputEdit.position(-999, -999);
   burstInputEdit.position(-999, -999);
-  priorityEdit.position(-999, -999);
+  sizeEdit.position(-999, -999);
   submitProcessEditButton.position(-999, -999);
   cancelProcessEditButton.position(-999, -999);
   startTimeLabelEdit.position(-999, -999);
   burstTimeLabelEdit.position(-999, -999);
-  priorityLabelEdit.position(-999, -999);
+  sizeLabelEdit.position(-999, -999);
 }
 
 function stepModeActivated() {
@@ -219,16 +211,8 @@ function algoSelectedEvent() {
   burstTimeLabel.position(200, 30);
   burstInput.position(200, 70);
 
-  priorityLabel.position(400, 30);
-  priority.position(400, 70);
-
-  if (selectedAlgo == "Round Robin (RR)") {
-    timeQuantumLabel.position(650, 30);
-    timeQuantum.position(650, 70);
-  } else {
-    timeQuantumLabel.position(-999, -999);
-    timeQuantum.position(-999, -999); // off the screen
-  }
+  sizeLabel.position(400, 30);
+  size.position(400, 70);
 }
 
 function draw() {
@@ -254,28 +238,28 @@ function draw() {
     }
 
     fill(0);
-    text("Ready Queue", 100, height / 1.1 - 20);
+    // text("Ready Queue", 100, height / 1.1 - 20);
 
-    if (readyQueueDraw) {
-      for (const proc of readyQueueDraw) {
-        fill(proc.red, proc.green, proc.blue);
-        rect(proc.x, proc.y, proc.width, proc.height);
-        fill(0);
-        noStroke();
-        textAlign(CENTER);
-        text(proc.num, proc.x, proc.y);
-      }
-    }
+    // if (readyQueueDraw) {
+    //   for (const proc of readyQueueDraw) {
+    //     fill(proc.red, proc.green, proc.blue);
+    //     rect(proc.x, proc.y, proc.width, proc.height);
+    //     fill(0);
+    //     noStroke();
+    //     textAlign(CENTER);
+    //     text(proc.num, proc.x, proc.y);
+    //   }
+    // }
 
-    for (const r of ganttChartInfo) {
-      rectMode(CORNER);
-      noStroke();
-      fill(r.red, r.green, r.blue, r.a);
-      rect(r.x, r.y, r.w, r.h);
-      fill(0, r.a);
-      textAlign(CENTER);
-      text(r.time, r.x + r.w / 2, r.y + r.h + 10);
-    }
+    // for (const r of ganttChartInfo) {
+    //   rectMode(CORNER);
+    //   noStroke();
+    //   fill(r.red, r.green, r.blue, r.a);
+    //   rect(r.x, r.y, r.w, r.h);
+    //   fill(0, r.a);
+    //   textAlign(CENTER);
+    //   text(r.time, r.x + r.w / 2, r.y + r.h + 10);
+    // }
 
     if (!stepModeCheckbox.checked()) {
       if (!(frameCount % slider.value())) {
@@ -283,24 +267,24 @@ function draw() {
       }
     }
 
-    if (ganttChartInfo.length && stepIndex == ganttChartInfo.length) {
-      if (readyQueueDraw) {
-        readyQueueDraw.length = 0;
-      } else {
-        readyQueueDraw = [];
-      }
+    // if (ganttChartInfo.length && stepIndex == ganttChartInfo.length) {
+    //   if (readyQueueDraw) {
+    //     readyQueueDraw.length = 0;
+    //   } else {
+    //     readyQueueDraw = [];
+    //   }
 
-      // the user/program has finished stepping through the display. the metrics will be displayed then
+    //   // the user/program has finished stepping through the display. the metrics will be displayed then
 
-      let metricPosX = 500;
-      let metricPosY = height / 7;
-      fill(0);
+    //   let metricPosX = 500;
+    //   let metricPosY = height / 7;
+    //   fill(0);
 
-      text("Metrics:", metricPosX, metricPosY);
-      text(`avgTurnaroundTime: ${avgTurnaroundTime}`, metricPosX, metricPosY + 30);
-      text(`avgResponseTime: ${avgResponseTime}`, metricPosX, metricPosY + 60);
-      text(`avgWaitingTime: ${avgWaitingTime}`, metricPosX, metricPosY + 90);
-    }
+    //   text("Metrics:", metricPosX, metricPosY);
+    //   text(`avgTurnaroundTime: ${avgTurnaroundTime}`, metricPosX, metricPosY + 30);
+    //   text(`avgResponseTime: ${avgResponseTime}`, metricPosX, metricPosY + 60);
+    //   text(`avgWaitingTime: ${avgWaitingTime}`, metricPosX, metricPosY + 90);
+    // }
   }
 }
 
@@ -316,15 +300,15 @@ function createProcess() {
   if (
     Number.isInteger(parseInt(startInput.value())) &&
     Number.isInteger(parseInt(burstInput.value())) &&
-    Number.isInteger(parseInt(priority.value()))
+    Number.isInteger(parseInt(size.value()))
   ) {
-    processes.push(new process(startInput.value(), burstInput.value(), priority.value()));
+    processes.push(new process(startInput.value(), burstInput.value(), size.value()));
   }
 }
 
 function go() {
   // change these to 0 so we start fresh
-  ganttChartInfo.length = 0;
+  // ganttChartInfo.length = 0;
   stepIndex = 0;
 
   let processesCopy = structuredClone(processes); // this is so the original processes do not get changed
@@ -339,302 +323,68 @@ function go() {
   let finishedProcesses = 0;
   let alreadyAdded = [];
 
-  switch (dropdown.value()) {
-    case "First Come First Serve (FCFS)":
-      processListWithMetrics = FCFS(processesCopy, timePassed, finishedProcesses, readyQueue, alreadyAdded);
-      break;
-    case "Shortest Job First (SJF)":
-      processListWithMetrics = SJF(processesCopy, timePassed, finishedProcesses, readyQueue, alreadyAdded);
-      break;
+  runSimulation();
 
-    case "Shortest Remaining Time First (SRTF)":
-      processListWithMetrics = SRTF(processesCopy, timePassed, finishedProcesses, readyQueue, alreadyAdded);
-      break;
+  // switch (dropdown.value()) {
+  //   case "First Come First Serve (FCFS)":
+  //     processListWithMetrics =
+  //     break;
+  //   case "Shortest Job First (SJF)":
+  //     processListWithMetrics = SJF(processesCopy, timePassed, finishedProcesses, readyQueue, alreadyAdded);
+  //     break;
 
-    case "Round Robin (RR)":
-      processListWithMetrics = RR(
-        processesCopy,
-        timePassed,
-        finishedProcesses,
-        readyQueue,
-        alreadyAdded,
-        timeQuantum.value(),
-      );
-      break;
-    case "Priority Scheduling (PRI) - PREEMPTIVE":
-      processListWithMetrics = PRI_preemptive(processesCopy, timePassed, finishedProcesses, readyQueue, alreadyAdded);
+  //   case "Shortest Remaining Time First (SRTF)":
+  //     processListWithMetrics = SRTF(processesCopy, timePassed, finishedProcesses, readyQueue, alreadyAdded);
+  //     break;
 
-      break;
-    case "Priority Scheduling (PRI) - NON-PREEMPTIVE":
-      processListWithMetrics = PRI_nonPreemptive(
-        processesCopy,
-        timePassed,
-        finishedProcesses,
-        readyQueue,
-        alreadyAdded,
-      );
-      break;
-    default:
-      // Code runs if no cases match
-      console.log("no algo selected");
-  }
+  //   case "Round Robin (RR)":
+  //     processListWithMetrics = RR(
+  //       processesCopy,
+  //       timePassed,
+  //       finishedProcesses,
+  //       readyQueue,
+  //       alreadyAdded,
+  //       timeQuantum.value(),
+  //     );
+  //     break;
+  //   case "Priority Scheduling (PRI) - PREEMPTIVE":
+  //     processListWithMetrics = PRI_preemptive(processesCopy, timePassed, finishedProcesses, readyQueue, alreadyAdded);
 
-  // this for loop sets the burst time back to the original, since our algos rely on the burst time being editied during run time
-  for (const p of processListWithMetrics) {
-    p.burstTime =
-      processes[
-        processes.findIndex((pro) => {
-          return pro.num == p.num;
-        })
-      ].burstTime;
-  }
+  //     break;
+  //   case "Priority Scheduling (PRI) - NON-PREEMPTIVE":
+  //     processListWithMetrics = PRI_nonPreemptive(
+  //       processesCopy,
+  //       timePassed,
+  //       finishedProcesses,
+  //       readyQueue,
+  //       alreadyAdded,
+  //     );
+  //     break;
+  //   default:
+  //     // Code runs if no cases match
+  //     console.log("no algo selected");
+  // }
 
-  // this where we actually calculate the metrics for the algo
-  if (dropdown.value() != "-- choose an algorithm --") {
-    // only run this if they've selected an algo
-    [avgTurnaroundTime, avgResponseTime, avgWaitingTime] = calculateMetrics(processListWithMetrics);
-  }
+  // // this for loop sets the burst time back to the original, since our algos rely on the burst time being editied during run time
+  // for (const p of processListWithMetrics) {
+  //   p.burstTime =
+  //     processes[
+  //       processes.findIndex((pro) => {
+  //         return pro.num == p.num;
+  //       })
+  //     ].burstTime;
+  // }
+
+  // // this where we actually calculate the metrics for the algo
+  // if (dropdown.value() != "-- choose an algorithm --") {
+  //   // only run this if they've selected an algo
+  //   [avgTurnaroundTime, avgResponseTime, avgWaitingTime] = calculateMetrics(processListWithMetrics);
+  // }
 }
 
-function snapshotReadyQueue(readyQueue, timePassed) {
-  // get it ready to draw
-
-  readyQueue = structuredClone(readyQueue);
-
-  for (let i = 0; i < readyQueue.length; i++) {
-    readyQueue[i].x = 100 + i * 50;
-    readyQueue[i].y = height / 1.1 + 50;
-  }
-
-  readyQueueStates.set(timePassed, structuredClone(readyQueue));
-}
-
-function addToGanttChart(process, timePassed, readyQueue) {
-  let xStart = 100;
-  let rectWidth = 20;
-  let rectHeight = 50;
-
-  ganttChartInfo.push({
-    red: process == null ? 100 : process.red,
-    green: process == null ? 100 : process.green,
-    blue: process == null ? 100 : process.blue,
-    x: xStart + timePassed * rectWidth,
-    y: height / 1.4,
-    w: rectWidth,
-    h: rectHeight,
-    a: 0,
-    time: timePassed,
-  });
-
-  snapshotReadyQueue(readyQueue, timePassed);
-
-  return timePassed + 1;
-}
-
-function startTimeCheck(processList, timePassed, readyQueue, alreadyAdded) {
-  // every time a process gets interupted, check all the processes, if it hasn't been added to the queue yet, and the start time has passed or is now, add it to the end of the ready queue
-  // also add that processe num to the alreadyAdded for tracking
-  for (const p of processList) {
-    if (+p.startTime <= timePassed && !alreadyAdded.includes(p.num)) {
-      readyQueue.push(p);
-      alreadyAdded.push(p.num);
-    }
-  }
-}
-
-function setCompletionTime(readyQueue, finishedProcesses, processList, timePassed) {
-  if (Number(readyQueue[0].burstTime) == 0) {
-    // if the current process is done
-    let currentProcess = readyQueue.shift();
-
-    // then change the value of .completionTime
-    processList[currentProcess.indexInProcessList].completionTime = timePassed;
-    return finishedProcesses + 1;
-  }
-
-  return finishedProcesses;
-}
-
-function setFirstExecutionTime(processList, readyQueue, timePassed) {
-  // change the value of .firstExecutionTime to the current time passed IF AND ONLY IF it hasn't been changed already
-  if (processList[readyQueue[0].indexInProcessList].firstExecutionTime == null) {
-    processList[readyQueue[0].indexInProcessList].firstExecutionTime = timePassed;
-  }
-}
-
-function FCFS(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
-  while (finishedProcesses != processList.length) {
-    startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
-
-    if (readyQueue.length > 0) {
-      setFirstExecutionTime(processList, readyQueue, timePassed);
-
-      timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
-      readyQueue[0].burstTime -= 1;
-      finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
-    } else {
-      // cpu idle
-      timePassed = addToGanttChart(null, timePassed, readyQueue);
-    }
-  }
-
-  return processList;
-}
-
-function SRTF(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
-  while (finishedProcesses != processList.length) {
-    // check if any processes are past or at their their start time, if they are, add them to the queue
-    startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
-
-    // move the processes with the shortest current burst time to the front of the ready queue
-    readyQueue.sort((a, b) => Number(a.burstTime) - Number(b.burstTime));
-
-    if (readyQueue.length > 0) {
-      readyQueue[0].burstTime -= 1;
-      setFirstExecutionTime(processList, readyQueue, timePassed);
-      timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
-      finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
-    } else {
-      // cpu idle
-
-      timePassed = addToGanttChart(null, timePassed, readyQueue);
-    }
-  }
-
-  return processList;
-}
-
-function SJF(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
-  let finished = true;
-  while (finishedProcesses != processList.length) {
-    startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
-
-    if (finished) {
-      // sort reay queue by burst time
-      readyQueue.sort((a, b) => Number(a.burstTime) - Number(b.burstTime));
-    }
-
-    // if theres something in the queue
-    if (readyQueue.length > 0) {
-      readyQueue[0].burstTime -= 1;
-      setFirstExecutionTime(processList, readyQueue, timePassed);
-      timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
-
-      let finishedProcessesSave = finishedProcesses;
-      finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
-
-      if (finishedProcesses != finishedProcessesSave) {
-        finished = true;
-      } else {
-        finished = false;
-      }
-    } else {
-      // ready queue is empty, cpu idle
-      timePassed = addToGanttChart(null, timePassed, readyQueue);
-    }
-  }
-
-  return processList;
-}
-
-function RR(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded, tq) {
-  while (finishedProcesses != processList.length) {
-    startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
-
-    if (readyQueue.length > 0) {
-      let finished = false;
-
-      setFirstExecutionTime(processList, readyQueue, timePassed);
-
-      for (let i = 0; i < tq; i++) {
-        // only loop to the time quantum
-        if (readyQueue[0].burstTime != 0) {
-          timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
-          readyQueue[0].burstTime -= 1;
-
-          startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
-        } else {
-          // the burst time of the current process went to 0 (it finished)
-
-          finished = true;
-        }
-      }
-
-      if (readyQueue[0].burstTime == 0) {
-        finished = true;
-      }
-
-      if (finished) {
-        finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
-      } else {
-        readyQueue.push(readyQueue.shift()); // if it didn't finish, move the process to the end of the queue
-      }
-    } else {
-      // ready queue is empty, cpu idle
-
-      timePassed = addToGanttChart(null, timePassed, readyQueue);
-    }
-  }
-  return processList;
-}
-
-function PRI_nonPreemptive(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
-  let finished = true;
-
-  while (finishedProcesses != processList.length) {
-    startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
-
-    if (finished) {
-      // sort ready queue by priority
-      readyQueue.sort((a, b) => Number(a.priority) - Number(b.priority));
-    }
-
-    // if theres something in the queue
-    if (readyQueue.length > 0) {
-      readyQueue[0].burstTime -= 1;
-      setFirstExecutionTime(processList, readyQueue, timePassed);
-      timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
-
-      let finishedProcessesSave = finishedProcesses;
-      finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
-      if (finishedProcesses != finishedProcessesSave) {
-        finished = true;
-      } else {
-        finished = false;
-      }
-    } else {
-      // ready queue is empty, cpu idle
-
-      timePassed = addToGanttChart(null, timePassed, readyQueue);
-    }
-  }
-
-  return processList;
-}
-
-function PRI_preemptive(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
-  while (finishedProcesses != processList.length) {
-    startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
-
-    // move the processes with the shortest current burst time to the front of the ready queue
-    readyQueue.sort((a, b) => Number(a.priority) - Number(b.priority));
-
-    if (readyQueue.length > 0) {
-      // if there is a processe in the ready queue
-      readyQueue[0].burstTime -= 1;
-
-      setFirstExecutionTime(processList, readyQueue, timePassed);
-
-      timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
-      // the function being called here has side effects
-      finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
-    } else {
-      // cpu idle
-      timePassed = addToGanttChart(null, timePassed, readyQueue);
-    }
-  }
-
-  return processList;
+// TODO: write the code for runSimulation
+function runSimulation() {
+  console.log("test");
 }
 
 function stepForward() {
@@ -655,25 +405,266 @@ function stepBackward() {
   readyQueueDraw = readyQueueStates.get(stepIndex);
 }
 
-function calculateMetrics(toCalculate) {
-  let totalTurnaroundTime = 0;
-  let totalResponseTime = 0;
-  let totalWaitingTime = 0;
+// function snapshotReadyQueue(readyQueue, timePassed) {
+//   // get it ready to draw
 
-  for (const p of toCalculate) {
-    // compute here
-    // just an intermediate step for debugging, not necessary
-    p.turnaroundTime = p.completionTime - p.startTime;
-    p.responseTime = p.firstExecutionTime - p.startTime;
-    p.waitingTime = p.turnaroundTime - p.burstTime;
-    totalTurnaroundTime += p.turnaroundTime;
-    totalResponseTime += p.responseTime;
-    totalWaitingTime += p.waitingTime;
-  }
+//   readyQueue = structuredClone(readyQueue);
 
-  let avgTurnaroundTime = totalTurnaroundTime / processListWithMetrics.length;
-  let avgResponseTime = totalResponseTime / processListWithMetrics.length;
-  let avgWaitingTime = totalWaitingTime / processListWithMetrics.length;
+//   for (let i = 0; i < readyQueue.length; i++) {
+//     readyQueue[i].x = 100 + i * 50;
+//     readyQueue[i].y = height / 1.1 + 50;
+//   }
 
-  return [avgTurnaroundTime, avgResponseTime, avgWaitingTime];
-}
+//   readyQueueStates.set(timePassed, structuredClone(readyQueue));
+// }
+
+// function addToGanttChart(process, timePassed, readyQueue) {
+//   let xStart = 100;
+//   let rectWidth = 20;
+//   let rectHeight = 50;
+
+//   ganttChartInfo.push({
+//     red: process == null ? 100 : process.red,
+//     green: process == null ? 100 : process.green,
+//     blue: process == null ? 100 : process.blue,
+//     x: xStart + timePassed * rectWidth,
+//     y: height / 1.4,
+//     w: rectWidth,
+//     h: rectHeight,
+//     a: 0,
+//     time: timePassed,
+//   });
+
+//   snapshotReadyQueue(readyQueue, timePassed);
+
+//   return timePassed + 1;
+// }
+
+// function startTimeCheck(processList, timePassed, readyQueue, alreadyAdded) {
+//   // every time a process gets interupted, check all the processes, if it hasn't been added to the queue yet, and the start time has passed or is now, add it to the end of the ready queue
+//   // also add that processe num to the alreadyAdded for tracking
+//   for (const p of processList) {
+//     if (+p.startTime <= timePassed && !alreadyAdded.includes(p.num)) {
+//       readyQueue.push(p);
+//       alreadyAdded.push(p.num);
+//     }
+//   }
+// }
+
+// function setCompletionTime(readyQueue, finishedProcesses, processList, timePassed) {
+//   if (Number(readyQueue[0].burstTime) == 0) {
+//     // if the current process is done
+//     let currentProcess = readyQueue.shift();
+
+//     // then change the value of .completionTime
+//     processList[currentProcess.indexInProcessList].completionTime = timePassed;
+//     return finishedProcesses + 1;
+//   }
+
+//   return finishedProcesses;
+// }
+
+// function setFirstExecutionTime(processList, readyQueue, timePassed) {
+//   // change the value of .firstExecutionTime to the current time passed IF AND ONLY IF it hasn't been changed already
+//   if (processList[readyQueue[0].indexInProcessList].firstExecutionTime == null) {
+//     processList[readyQueue[0].indexInProcessList].firstExecutionTime = timePassed;
+//   }
+// }
+
+// function FCFS(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
+//   while (finishedProcesses != processList.length) {
+//     startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
+
+//     if (readyQueue.length > 0) {
+//       setFirstExecutionTime(processList, readyQueue, timePassed);
+
+//       timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
+//       readyQueue[0].burstTime -= 1;
+//       finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
+//     } else {
+//       // cpu idle
+//       timePassed = addToGanttChart(null, timePassed, readyQueue);
+//     }
+//   }
+
+//   return processList;
+// }
+
+// function SRTF(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
+//   while (finishedProcesses != processList.length) {
+//     // check if any processes are past or at their their start time, if they are, add them to the queue
+//     startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
+
+//     // move the processes with the shortest current burst time to the front of the ready queue
+//     readyQueue.sort((a, b) => Number(a.burstTime) - Number(b.burstTime));
+
+//     if (readyQueue.length > 0) {
+//       readyQueue[0].burstTime -= 1;
+//       setFirstExecutionTime(processList, readyQueue, timePassed);
+//       timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
+//       finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
+//     } else {
+//       // cpu idle
+
+//       timePassed = addToGanttChart(null, timePassed, readyQueue);
+//     }
+//   }
+
+//   return processList;
+// }
+
+// function SJF(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
+//   let finished = true;
+//   while (finishedProcesses != processList.length) {
+//     startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
+
+//     if (finished) {
+//       // sort reay queue by burst time
+//       readyQueue.sort((a, b) => Number(a.burstTime) - Number(b.burstTime));
+//     }
+
+//     // if theres something in the queue
+//     if (readyQueue.length > 0) {
+//       readyQueue[0].burstTime -= 1;
+//       setFirstExecutionTime(processList, readyQueue, timePassed);
+//       timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
+
+//       let finishedProcessesSave = finishedProcesses;
+//       finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
+
+//       if (finishedProcesses != finishedProcessesSave) {
+//         finished = true;
+//       } else {
+//         finished = false;
+//       }
+//     } else {
+//       // ready queue is empty, cpu idle
+//       timePassed = addToGanttChart(null, timePassed, readyQueue);
+//     }
+//   }
+
+//   return processList;
+// }
+
+// function RR(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded, tq) {
+//   while (finishedProcesses != processList.length) {
+//     startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
+
+//     if (readyQueue.length > 0) {
+//       let finished = false;
+
+//       setFirstExecutionTime(processList, readyQueue, timePassed);
+
+//       for (let i = 0; i < tq; i++) {
+//         // only loop to the time quantum
+//         if (readyQueue[0].burstTime != 0) {
+//           timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
+//           readyQueue[0].burstTime -= 1;
+
+//           startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
+//         } else {
+//           // the burst time of the current process went to 0 (it finished)
+
+//           finished = true;
+//         }
+//       }
+
+//       if (readyQueue[0].burstTime == 0) {
+//         finished = true;
+//       }
+
+//       if (finished) {
+//         finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
+//       } else {
+//         readyQueue.push(readyQueue.shift()); // if it didn't finish, move the process to the end of the queue
+//       }
+//     } else {
+//       // ready queue is empty, cpu idle
+
+//       timePassed = addToGanttChart(null, timePassed, readyQueue);
+//     }
+//   }
+//   return processList;
+// }
+
+// function PRI_nonPreemptive(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
+//   let finished = true;
+
+//   while (finishedProcesses != processList.length) {
+//     startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
+
+//     if (finished) {
+//       // sort ready queue by priority
+//       readyQueue.sort((a, b) => Number(a.priority) - Number(b.priority));
+//     }
+
+//     // if theres something in the queue
+//     if (readyQueue.length > 0) {
+//       readyQueue[0].burstTime -= 1;
+//       setFirstExecutionTime(processList, readyQueue, timePassed);
+//       timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
+
+//       let finishedProcessesSave = finishedProcesses;
+//       finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
+//       if (finishedProcesses != finishedProcessesSave) {
+//         finished = true;
+//       } else {
+//         finished = false;
+//       }
+//     } else {
+//       // ready queue is empty, cpu idle
+
+//       timePassed = addToGanttChart(null, timePassed, readyQueue);
+//     }
+//   }
+
+//   return processList;
+// }
+
+// function PRI_preemptive(processList, timePassed, finishedProcesses, readyQueue, alreadyAdded) {
+//   while (finishedProcesses != processList.length) {
+//     startTimeCheck(processList, timePassed, readyQueue, alreadyAdded);
+
+//     // move the processes with the shortest current burst time to the front of the ready queue
+//     readyQueue.sort((a, b) => Number(a.priority) - Number(b.priority));
+
+//     if (readyQueue.length > 0) {
+//       // if there is a processe in the ready queue
+//       readyQueue[0].burstTime -= 1;
+
+//       setFirstExecutionTime(processList, readyQueue, timePassed);
+
+//       timePassed = addToGanttChart(readyQueue[0], timePassed, readyQueue);
+//       // the function being called here has side effects
+//       finishedProcesses = setCompletionTime(readyQueue, finishedProcesses, processList, timePassed);
+//     } else {
+//       // cpu idle
+//       timePassed = addToGanttChart(null, timePassed, readyQueue);
+//     }
+//   }
+
+//   return processList;
+// }
+
+// function calculateMetrics(toCalculate) {
+//   let totalTurnaroundTime = 0;
+//   let totalResponseTime = 0;
+//   let totalWaitingTime = 0;
+
+//   for (const p of toCalculate) {
+//     // compute here
+//     // just an intermediate step for debugging, not necessary
+//     p.turnaroundTime = p.completionTime - p.startTime;
+//     p.responseTime = p.firstExecutionTime - p.startTime;
+//     p.waitingTime = p.turnaroundTime - p.burstTime;
+//     totalTurnaroundTime += p.turnaroundTime;
+//     totalResponseTime += p.responseTime;
+//     totalWaitingTime += p.waitingTime;
+//   }
+
+//   let avgTurnaroundTime = totalTurnaroundTime / processListWithMetrics.length;
+//   let avgResponseTime = totalResponseTime / processListWithMetrics.length;
+//   let avgWaitingTime = totalWaitingTime / processListWithMetrics.length;
+
+//   return [avgTurnaroundTime, avgResponseTime, avgWaitingTime];
+// }
