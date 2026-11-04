@@ -45,7 +45,8 @@ class malloc:
         elif self.policy == 'WORST' or self.policy == 'FIRST':
             bestSize = -1
 
-        count = 0
+        count = 0 # this simply counts how many free list elements we went thorugh
+        # its just so the user can see how many elements were searched. we can remove this in our simulation for simplicity. 
             
         for i in range(len(self.freelist)):
             eaddr, esize = self.freelist[i][0], self.freelist[i][1]
@@ -53,26 +54,42 @@ class malloc:
             if esize >= size and ((self.policy == 'BEST'  and esize < bestSize) or
                                   (self.policy == 'WORST' and esize > bestSize) or
                                   (self.policy == 'FIRST')):
+                ''' in plain english this says: 
+                
+                if the size of the current freelist chunk we are checking is greater than or equal to the size of the process we are allocating AND
+                
+                if the policy if BEST, we set the current bestSize we've found if its SMALLER 
+                if the policy if WORST, we set the current bestSize we've found if its BIGGER
+                if the policy if FIRST, we set the current bestSize and break 
+                
+                
+                
+                '''
                 bestAddr = eaddr
                 bestSize = esize
                 bestIdx  = i
                 if self.policy == 'FIRST':
                     break
 
-        if bestIdx != -1:
+        if bestIdx != -1: 
+            ''' if we've acutally found something ''' 
             if bestSize > size:
+                ''' the space we found does not fit perfectly for the process' size, so we need to split the chunk we found into 2'''
                 # print('SPLIT', bestAddr, size)
+                ''' this edits that free list instance, by setting it to the current address+size up until the size of that chunk-the size of the allocated process'''
                 self.freelist[bestIdx] = (bestAddr + size, bestSize - size)
                 self.addToMap(bestAddr, size)
             elif bestSize == size:
+                ''' the space we found DOES fit perfectly for the process' size, so no need to split'''
                 # print('PERFECT MATCH (no split)', bestAddr, size)
+                ''' we simply just pop that section out of the free list'''
                 self.freelist.pop(bestIdx)
                 self.addToMap(bestAddr, size)
             else:
                 abort('should never get here')
             return (bestAddr, count)
 
-        # print('*** FAILED TO FIND A SPOT', size)
+        print('*** FAILED TO FIND A SPOT', size)
         return (-1, count)
 
     def free(self, addr):
@@ -83,10 +100,9 @@ class malloc:
         size = self.sizemap[addr]
 
         
-        # sort by the address number
+        # sort by the address number. this is changed from the original. they had many different options for sorting the free list. I am just going to sort by the address
         self.freelist.append((addr, size))
         self.freelist = sorted(self.freelist, key=lambda e: e[0])
-        
 
         # not meant to be an efficient or realistic coalescing...
         if self.coalesce == True:
