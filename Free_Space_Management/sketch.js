@@ -381,10 +381,18 @@ function go() {
   //   [avgTurnaroundTime, avgResponseTime, avgWaitingTime] = calculateMetrics(processListWithMetrics);
   // }
 }
-
 // TODO: write the code for runSimulation
+
 function runSimulation() {
-  console.log("test");
+  let m = new Malloc(100, "BEST", false);
+  m.malloc(5);
+  m.dump();
+  m.malloc(10);
+  m.dump();
+  m.free(0);
+  m.dump();
+  m.free(5);
+  m.dump();
 }
 
 function stepForward() {
