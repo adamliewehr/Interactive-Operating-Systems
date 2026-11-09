@@ -31,13 +31,13 @@ class Malloc {
       bestSize = -1;
     }
 
-    let count = 0; // this simply counts how many free list elements we went thorugh
+    // let count = 0; // this simply counts how many free list elements we went thorugh
     // its just so the user can see how many elements were searched. we can remove this in our simulation for simplicity.
 
     for (let i = 0; i < this.freelist.length; i++) {
       let eaddr = this.freelist[i][0];
       let esize = this.freelist[i][1];
-      count += 1;
+      // count += 1;
 
       // console.log("inside if");
       // console.log(this.policy);
@@ -88,11 +88,13 @@ class Malloc {
       } else {
         console.log("should never get here");
       }
-      return [bestAddr, count];
+      // return [bestAddr, count];
+      return bestAddr;
     }
 
     console.log("*** FAILED TO FIND A SPOT", size);
-    return [-1, count];
+    // return [-1, count];
+    return -1;
   }
   free(addr) {
     //  simple back on end of list, no coalesce

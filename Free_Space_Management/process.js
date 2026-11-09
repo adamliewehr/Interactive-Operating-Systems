@@ -1,24 +1,7 @@
 class process {
-  constructor(startTime, burstTime, size) {
-    this.startTime = startTime; // aka arrival time
-    this.burstTime = burstTime;
+  constructor(size, addr) {
     this.size = size;
-
-    // this is after sorting, and will aid in the storage of the metric values below
-    this.indexInProcessList = null;
-
-    // // for metrics. this is what we extract during the algoirthm runtime
-    // this.completionTime = null; // when did the process complete all bursts
-    // this.firstExecutionTime = null; // when was the process first run
-
-    // // actual values for metrics. we calculate these after using all previous variables
-    // // Formula: Turnaround Time = Completion Time - Arrival Time
-    // this.turnaroundTime = null;
-    // // Response Time = First Execution Time - Arrival Time
-    // this.responseTime = null;
-
-    // // Waiting Time = Turnaround Time - Burst Time
-    // this.waitingTime = null;
+    this.addr = addr;
 
     // color
     this.red = random(100, 255);
@@ -27,16 +10,14 @@ class process {
 
     this.num = `p${processes.length}`;
 
-    this.x = 100 * (processes.length + 1); // x = 100 is where the processes start getting drawn on the screen, then every 100 pixels after that
-    this.y = height / 2;
+    this.x = memoryStickXStart + addr;
+    this.y = memoryStickYStart;
 
     // going to have to make this responsive, so will need to add a length and width, and update them accordingly as the number of processes grows, but this is for much later
-    this.width = 50;
-    this.height = 50;
+    this.width = this.size;
+    this.height = memoryStickHeight;
   }
   display() {
-    // console.log(processes.length);
-    // colorMode(HSB)
     fill(this.red, this.green, this.blue);
     stroke(0);
     strokeWeight(1);
@@ -46,24 +27,17 @@ class process {
     noStroke();
     textAlign(CENTER);
 
-    text(this.num, this.x, this.y);
+    text(this.num, this.x + this.width / 2, this.y + this.height / 2);
 
-    textAlign(LEFT);
+    // textAlign(LEFT);
 
-    text(`start: ${this.startTime}`, this.x - this.width / 2, this.y + this.height / 2 + 20);
-    text(`burst: ${this.burstTime}`, this.x - this.width / 2, this.y + this.height / 2 + 40);
-    text(`size: ${this.size}`, this.x - this.width / 2, this.y + this.height / 2 + 60);
-
-    // this.priority ? text(`priority: ${this.priority}`, this.x - this.width / 2, this.y + this.height / 2 + 60) : null;
+    // text(`size: ${this.size}`, this.x - this.width / 2, this.y + this.height / 2 + 20);
   }
 
   checkForRollOver(xPos, yPos) {
-    if (dist(xPos, yPos, this.x, this.y) < 50) {
+    if (xPos > this.x && xPos < this.x + this.width && yPos > this.y && yPos < this.y + this.height) {
       return true;
     }
-    // if (mouseX > this.x - this.width / 2 && mouseX < this.x + this.width / 2) {
-
-    // }
     return false;
   }
 }
