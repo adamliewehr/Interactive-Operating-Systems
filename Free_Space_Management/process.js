@@ -23,11 +23,11 @@ class process {
     strokeWeight(1);
     rect(this.x, this.y, this.width, this.height);
 
-    fill(0);
-    noStroke();
-    textAlign(CENTER);
+    // fill(0);
+    // noStroke();
+    // textAlign(CENTER);
 
-    text(this.num, this.x + this.width / 2, this.y + this.height / 2);
+    // text(this.num, this.x + this.width / 2, this.y + this.height / 2);
 
     // textAlign(LEFT);
 

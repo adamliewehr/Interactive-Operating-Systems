@@ -7,6 +7,7 @@ let sizeLabel;
 
 let m;
 let totalSize, createMemorySpaceButton, selectedAlgo, coalesceCheckbox;
+let saveSettingsButton;
 let run = false;
 function setup() {
   createCanvas(windowWidth, windowHeight - 100);
@@ -45,6 +46,11 @@ function setup() {
   // Call createProcess() when the button is pressed
   createMemorySpaceButton.mousePressed(createMemorySpace);
 
+  saveSettingsButton = createButton("Change Settings");
+  saveSettingsButton.position(-999, -999);
+  // Call createProcess() when the button is pressed
+  saveSettingsButton.mousePressed(saveSettings);
+
   // ---------------------
   // ---------------------
   // ---------------------
@@ -71,8 +77,10 @@ function setup() {
 }
 
 let memoryStickXStart = 50;
-let memoryStickYStart = 400;
+let memoryStickYStart = 300;
 let memoryStickHeight = 100;
+
+let freeListYStart = 500;
 
 // // for testing
 // function draw() {
@@ -82,17 +90,31 @@ let memoryStickHeight = 100;
 // }
 
 function draw() {
-  textAlign(CENTER);
+  // textAlign(CENTER);
   background(255);
-  fill(100);
+  fill(0);
 
   rectMode(CORNER);
   if (run) {
-    // console.log(m);
+    // memory stick
+
+    colorMode(RGB);
+    text("Memory: ", memoryStickXStart, memoryStickYStart - 20);
     rect(memoryStickXStart, memoryStickYStart, m.size, memoryStickHeight);
     text(0, memoryStickXStart, memoryStickYStart + memoryStickHeight + 20);
     text(m.size, memoryStickXStart + m.size, memoryStickYStart + memoryStickHeight + 20);
+    // free list
+    text("Free List:", memoryStickXStart, freeListYStart - 20);
+    colorMode(HSB);
+    let count = 0;
+    for (const chunk of m.freelist) {
+      fill(count, 100, 100);
+      count += 20;
+      rect(memoryStickXStart + chunk[0], freeListYStart, chunk[1], memoryStickHeight);
+    }
   }
+
+  colorMode(RGB);
 
   for (const p of processes) {
     p.display();
@@ -104,7 +126,6 @@ function mousePressed() {
     if (processes[i].checkForRollOver(mouseX, mouseY)) {
       m.free(processes[i].addr);
       processes.splice(i, 1);
-      // todo: need to actually remove it from the list.
     }
   }
 }
@@ -112,7 +133,9 @@ function mousePressed() {
 function createProcess() {
   if (Number.isInteger(parseInt(size.value()))) {
     let addr = m.malloc(parseInt(size.value()));
-    processes.push(new process(parseInt(size.value()), addr));
+    if (addr != -1) {
+      processes.push(new process(parseInt(size.value()), addr));
+    }
   }
 }
 
@@ -142,4 +165,16 @@ function createMemorySpace() {
   submitProcess.position(20, y);
   y += spacing;
   clearProcesses.position(20, y);
+
+  // moving things away that shouldn't be changed
+
+  totalSize.position(-999, -999);
+  totalSizeLabel.position(-999, -999);
+  createMemorySpaceButton.position(-999, -999);
+  saveSettingsButton.position(500, 50);
+}
+
+function saveSettings() {
+  m.coalesce = coalesceCheckbox.checked();
+  m.policy = dropdown.value();
 }
