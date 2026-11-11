@@ -73,6 +73,9 @@ function setup() {
   clearProcesses.mousePressed(() => {
     processes.length = 0; // setting a list's length equal to 0 clears the list
     // TODO: will have to set everything back to the beginning for this one
+    m.freelist = [];
+    m.freelist.push([0, +totalSize.value()]);
+    m.sizemap = {};
   });
 }
 
