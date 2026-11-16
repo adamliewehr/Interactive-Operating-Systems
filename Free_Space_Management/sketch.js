@@ -10,6 +10,11 @@ let totalSize, createMemorySpaceButton, selectedAlgo, coalesceCheckbox;
 let saveSettingsButton;
 let run = false;
 
+let currentRunBox, currentRunLabel;
+
+let currentRun = [];
+let numOfProcesses = 0;
+
 function setup() {
   createCanvas(windowWidth, windowHeight - 100);
 
@@ -42,8 +47,12 @@ function setup() {
   coalesceCheckbox.position(400, 50);
   coalesceCheckbox.changed(saveSettings);
 
+  saveCurrentRun = createCheckbox("Save Current Run?", false);
+  saveCurrentRun.position(500, 50);
+  // saveCurrentRun.changed(saveSettings);
+
   createMemorySpaceButton = createButton("Good to go");
-  createMemorySpaceButton.position(500, 50);
+  createMemorySpaceButton.position(650, 50);
   // Call createProcess() when the button is pressed
   createMemorySpaceButton.mousePressed(createMemorySpace);
 
@@ -69,14 +78,20 @@ function setup() {
   // Call createProcess() when the button is pressed
   submitProcess.mousePressed(createProcess);
 
-  clearProcesses = createButton("Clear Processes");
+  currentRunLabel = createP("Current Run: ");
+  currentRunLabel.position(-999, -999);
+  currentRunBox = createInput();
+  currentRunBox.position(-999, -999);
+
+  clearProcesses = createButton("Start Over");
   clearProcesses.position(-999, -999);
   clearProcesses.mousePressed(() => {
     processes.length = 0; // setting a list's length equal to 0 clears the list
-    // TODO: will have to set everything back to the beginning for this one
     m.freelist = [];
     m.freelist.push([0, +totalSize.value()]);
     m.sizemap = {};
+    currentRun.length = 0;
+    currentRunBox.value(currentRun);
   });
 }
 
@@ -137,7 +152,13 @@ function mousePressed() {
   for (let i = processes.length - 1; i >= 0; i--) {
     if (processes[i].checkForRollOver(mouseX, mouseY)) {
       m.free(processes[i].addr);
-      processes.splice(i, 1);
+      let p = processes.splice(i, 1)[0];
+      // console.log(p);
+      if (saveCurrentRun.checked()) {
+        currentRun.push(`-${p.num}`);
+        console.log(currentRun);
+        currentRunBox.value(currentRun);
+      }
     }
   }
 }
@@ -145,8 +166,14 @@ function mousePressed() {
 function createProcess() {
   if (Number.isInteger(parseInt(size.value()))) {
     let addr = m.malloc(parseInt(size.value()));
+    if (saveCurrentRun.checked()) {
+      currentRun.push(`+${size.value()}`);
+      console.log(currentRun);
+      currentRunBox.value(currentRun);
+    }
     if (addr != -1) {
-      processes.push(new process(parseInt(size.value()), addr));
+      processes.push(new process(parseInt(size.value()), addr, numOfProcesses));
+      numOfProcesses += 1;
     }
   }
 }
@@ -177,6 +204,9 @@ function createMemorySpace() {
   submitProcess.position(20, y);
   y += spacing;
   clearProcesses.position(20, y);
+
+  currentRunLabel.position(200, y - 15);
+  currentRunBox.position(300, y);
 
   // moving things away that shouldn't be changed
 

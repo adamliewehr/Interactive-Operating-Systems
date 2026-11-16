@@ -97,6 +97,7 @@ class Malloc {
     // return [-1, count];
     return -1;
   }
+
   free(addr) {
     //  simple back on end of list, no coalesce
     if (!this.sizemap[addr]) {

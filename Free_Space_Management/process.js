@@ -1,5 +1,5 @@
 class process {
-  constructor(size, addr) {
+  constructor(size, addr, num) {
     this.size = size;
     this.addr = addr;
 
@@ -8,7 +8,7 @@ class process {
     this.green = random(100, 255);
     this.blue = random(100, 255);
 
-    this.num = `p${processes.length}`;
+    this.num = num;
 
     this.x = stickXStart + addr * (stickWidth / m.size);
     this.y = memoryStickYStart;
