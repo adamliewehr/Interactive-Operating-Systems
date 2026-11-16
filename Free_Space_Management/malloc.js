@@ -93,6 +93,7 @@ class Malloc {
     }
 
     console.log("*** FAILED TO FIND A SPOT", size);
+    alert(`Failed to find a spot for processes of size ${size}`);
     // return [-1, count];
     return -1;
   }
