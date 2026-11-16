@@ -9,6 +9,7 @@ let m;
 let totalSize, createMemorySpaceButton, selectedAlgo, coalesceCheckbox;
 let saveSettingsButton;
 let run = false;
+
 function setup() {
   createCanvas(windowWidth, windowHeight - 100);
 
@@ -34,12 +35,12 @@ function setup() {
   dropdown.option("WORST");
 
   // call this function when the item in the dropdown changes
-  // dropdown.changed(algoSelectedEvent);
+  dropdown.changed(saveSettings);
 
   // Create a checkbox with a label and default state (false = unchecked)
   coalesceCheckbox = createCheckbox("Coalesce?", false);
   coalesceCheckbox.position(400, 50);
-  // coalesceCheckbox .changed(stepModeActivated);
+  coalesceCheckbox.changed(saveSettings);
 
   createMemorySpaceButton = createButton("Good to go");
   createMemorySpaceButton.position(500, 50);
@@ -182,10 +183,12 @@ function createMemorySpace() {
   totalSize.position(-999, -999);
   totalSizeLabel.position(-999, -999);
   createMemorySpaceButton.position(-999, -999);
-  saveSettingsButton.position(500, 50);
+  // saveSettingsButton.position(500, 50);
 }
 
 function saveSettings() {
-  m.coalesce = coalesceCheckbox.checked();
-  m.policy = dropdown.value();
+  if (run) {
+    m.coalesce = coalesceCheckbox.checked();
+    m.policy = dropdown.value();
+  }
 }
