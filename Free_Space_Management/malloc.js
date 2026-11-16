@@ -5,7 +5,7 @@ class Malloc {
 
     // init free list
     this.freelist = [];
-    this.freelist.push([0, size]);
+    this.freelist.push([0, size]); // [addr, size]
 
     // keep track of ptr to size mappings
     this.sizemap = {};

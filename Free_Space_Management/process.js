@@ -10,12 +10,12 @@ class process {
 
     this.num = `p${processes.length}`;
 
-    this.x = memoryStickXStart + addr;
+    this.x = stickXStart + addr * (stickWidth / m.size);
     this.y = memoryStickYStart;
 
     // going to have to make this responsive, so will need to add a length and width, and update them accordingly as the number of processes grows, but this is for much later
-    this.width = this.size;
-    this.height = memoryStickHeight;
+    this.width = this.size * (stickWidth / m.size);
+    this.height = stickHeight;
   }
   display() {
     fill(this.red, this.green, this.blue);

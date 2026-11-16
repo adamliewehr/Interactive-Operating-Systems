@@ -79,10 +79,11 @@ function setup() {
   });
 }
 
-let memoryStickXStart = 50;
-let memoryStickYStart = 300;
-let memoryStickHeight = 100;
+let stickXStart = 50;
+let stickHeight = 100;
+let stickWidth;
 
+let memoryStickYStart = 300;
 let freeListYStart = 500;
 
 // // for testing
@@ -101,19 +102,26 @@ function draw() {
   if (run) {
     // memory stick
 
+    stickWidth = width - stickXStart * 2;
+
     colorMode(RGB);
-    text("Memory: ", memoryStickXStart, memoryStickYStart - 20);
-    rect(memoryStickXStart, memoryStickYStart, m.size, memoryStickHeight);
-    text(0, memoryStickXStart, memoryStickYStart + memoryStickHeight + 20);
-    text(m.size, memoryStickXStart + m.size, memoryStickYStart + memoryStickHeight + 20);
+    text("Memory: ", stickXStart, memoryStickYStart - 20);
+    rect(stickXStart, memoryStickYStart, stickWidth, stickHeight);
+    text(0, stickXStart, memoryStickYStart + stickHeight + 20);
+    text(m.size, stickXStart + stickWidth, memoryStickYStart + stickHeight + 20);
     // free list
-    text("Free List:", memoryStickXStart, freeListYStart - 20);
+    text("Free List:", stickXStart, freeListYStart - 20);
     colorMode(HSB);
     let count = 0;
     for (const chunk of m.freelist) {
       fill(count, 100, 100);
       count += 20;
-      rect(memoryStickXStart + chunk[0], freeListYStart, chunk[1], memoryStickHeight);
+      rect(
+        stickXStart + chunk[0] * (stickWidth / m.size),
+        freeListYStart,
+        chunk[1] * (stickWidth / m.size),
+        stickHeight,
+      );
     }
   }
 
