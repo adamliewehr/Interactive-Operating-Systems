@@ -82,6 +82,7 @@ function setup() {
   currentRunLabel.position(-999, -999);
   currentRunBox = createInput();
   currentRunBox.position(-999, -999);
+  currentRunBox.size(500);
 
   clearProcesses = createButton("Start Over");
   clearProcesses.position(-999, -999);
@@ -92,6 +93,7 @@ function setup() {
     m.sizemap = {};
     currentRun.length = 0;
     currentRunBox.value(currentRun);
+    numOfProcesses = 0;
   });
 }
 
@@ -154,23 +156,27 @@ function mousePressed() {
       m.free(processes[i].addr);
       let p = processes.splice(i, 1)[0];
       // console.log(p);
-      if (saveCurrentRun.checked()) {
-        currentRun.push(`-${p.num}`);
-        console.log(currentRun);
-        currentRunBox.value(currentRun);
-      }
+      logMove(p);
     }
+  }
+}
+
+function logMove(p = undefined) {
+  if (saveCurrentRun.checked()) {
+    if (p) {
+      currentRun.push(`-${p.num}`);
+    } else {
+      currentRun.push(`+${size.value()}`);
+    }
+    console.log(currentRun);
+    currentRunBox.value(currentRun);
   }
 }
 
 function createProcess() {
   if (Number.isInteger(parseInt(size.value()))) {
     let addr = m.malloc(parseInt(size.value()));
-    if (saveCurrentRun.checked()) {
-      currentRun.push(`+${size.value()}`);
-      console.log(currentRun);
-      currentRunBox.value(currentRun);
-    }
+    logMove(); // we want this to be logged regarless of if its actually added or not
     if (addr != -1) {
       processes.push(new process(parseInt(size.value()), addr, numOfProcesses));
       numOfProcesses += 1;
