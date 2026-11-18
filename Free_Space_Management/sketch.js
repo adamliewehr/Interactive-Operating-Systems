@@ -15,51 +15,43 @@ let currentRunBox, currentRunLabel;
 let currentRun = [];
 let numOfProcesses = 0;
 
+let virtualConsole = [];
+
+let x;
+
 function setup() {
-  createCanvas(windowWidth, windowHeight - 100);
+  createCanvas(windowWidth, windowHeight);
 
-  totalSizeLabel = createP("Total Memory Size");
-  totalSizeLabel.position(20, 10);
-
-  totalSize = createInput();
-  totalSize.position(20, 50);
-
+  x = 20;
+  algoLabel = createP("Algorithm ");
+  algoLabel.position(x, 10);
   dropdown = createSelect();
-  dropdown.position(200, 50);
-
-  algoLabel = createP("Algorithm Chosen");
-  algoLabel.position(200, 10);
-
-  // this option will show initially, but can't be chosen
-  dropdown.option("-- choose an algorithm --");
-  dropdown.disable("-- choose an algorithm --");
-  dropdown.selected("-- choose an algorithm --");
-
+  dropdown.position(x, 50);
   dropdown.option("FIRST");
   dropdown.option("BEST");
   dropdown.option("WORST");
-
   // call this function when the item in the dropdown changes
   dropdown.changed(saveSettings);
 
+  x = 120;
+  totalSizeLabel = createP("Total Memory Size");
+  totalSizeLabel.position(x, 10);
+  totalSize = createInput();
+  totalSize.position(x, 50);
+
   // Create a checkbox with a label and default state (false = unchecked)
   coalesceCheckbox = createCheckbox("Coalesce?", false);
-  coalesceCheckbox.position(400, 50);
+  coalesceCheckbox.position(300, 50);
   coalesceCheckbox.changed(saveSettings);
 
   saveCurrentRun = createCheckbox("Save Current Run?", false);
-  saveCurrentRun.position(500, 50);
+  saveCurrentRun.position(400, 50);
   // saveCurrentRun.changed(saveSettings);
 
   createMemorySpaceButton = createButton("Good to go");
-  createMemorySpaceButton.position(650, 50);
+  createMemorySpaceButton.position(550, 50);
   // Call createProcess() when the button is pressed
   createMemorySpaceButton.mousePressed(createMemorySpace);
-
-  saveSettingsButton = createButton("Change Settings");
-  saveSettingsButton.position(-999, -999);
-  // Call createProcess() when the button is pressed
-  saveSettingsButton.mousePressed(saveSettings);
 
   // ---------------------
   // ---------------------
@@ -94,6 +86,7 @@ function setup() {
     currentRun.length = 0;
     currentRunBox.value(currentRun);
     numOfProcesses = 0;
+    virtualConsole.length = 0;
   });
 }
 
@@ -103,6 +96,7 @@ let stickWidth;
 
 let memoryStickYStart = 300;
 let freeListYStart = 500;
+let consoleYStart = 700;
 
 // // for testing
 // function draw() {
@@ -141,6 +135,20 @@ function draw() {
         stickHeight,
       );
     }
+
+    // output console
+
+    fill(0);
+    text("Console:", stickXStart, consoleYStart - 20);
+    noFill();
+    rect(stickXStart, consoleYStart, stickWidth / 2, height - 50 - consoleYStart);
+
+    for (let i = 0; i < virtualConsole.length; i++) {
+      let y = consoleYStart + height - 50 - consoleYStart - i * 20;
+      if (y > consoleYStart + 20) {
+        text(virtualConsole[i], stickXStart + 5, y - 10);
+      }
+    }
   }
 
   colorMode(RGB);
@@ -156,19 +164,30 @@ function mousePressed() {
       m.free(processes[i].addr);
       let p = processes.splice(i, 1)[0];
       // console.log(p);
-      logMove(p);
+      logMove(p, undefined);
     }
   }
 }
 
-function logMove(p = undefined) {
+function logMove(p, addr) {
+  let now = new Date();
+
+  let time = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
   if (saveCurrentRun.checked()) {
     if (p) {
       currentRun.push(`-${p.num}`);
+      virtualConsole.unshift(`${time}: Removed p${p.num} of size ${p.size} from addr ${p.addr}`);
     } else {
       currentRun.push(`+${size.value()}`);
+      if (addr != -1) {
+        processes.push(new process(parseInt(size.value()), addr, numOfProcesses));
+        numOfProcesses += 1;
+        virtualConsole.unshift(`${time}: Added p${numOfProcesses} of size ${size.value()} to addr ${addr}`);
+      } else {
+        virtualConsole.unshift(`${time}: Failed to add process of size ${size.value()}. Reason: too large`);
+      }
     }
-    console.log(currentRun);
+    // console.log(currentRun);
     currentRunBox.value(currentRun);
   }
 }
@@ -176,11 +195,7 @@ function logMove(p = undefined) {
 function createProcess() {
   if (Number.isInteger(parseInt(size.value()))) {
     let addr = m.malloc(parseInt(size.value()));
-    logMove(); // we want this to be logged regarless of if its actually added or not
-    if (addr != -1) {
-      processes.push(new process(parseInt(size.value()), addr, numOfProcesses));
-      numOfProcesses += 1;
-    }
+    logMove(undefined, addr); // we want this to be logged regarless of if its actually added or not
   }
 }
 
@@ -220,6 +235,9 @@ function createMemorySpace() {
   totalSizeLabel.position(-999, -999);
   createMemorySpaceButton.position(-999, -999);
   // saveSettingsButton.position(500, 50);
+
+  coalesceCheckbox.position(120, 50);
+  saveCurrentRun.position(220, 50);
 }
 
 function saveSettings() {
